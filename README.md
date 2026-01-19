@@ -119,64 +119,79 @@ Your implementation may modify or extend internal files, but **the inference ent
 
 ---
 
-# Expected Submission Format
 
-Participants must submit their **full project directory**, based on this repository.
 
-Your submission **must include**:
+# Feature Set, Data Interface, and Evaluation Rules
 
-* Trained model weights
-* Updated `infer.py`
-* Updated `infer.yaml`
-* Model definitions
-* Full preprocessing pipeline
-
-We will **not** retrain models.
-
-We will:
-
-1. Modify only **data-related parameters** inside `infer.yaml`
-2. Run:
-
-   ```
-   python scripts/infer.py
-   ```
-3. Evaluate the produced output file.
+This section describes the available input features, how feature selection is controlled, how preprocessing may be modified, how test data is formatted, and how inference is performed during official evaluation.
 
 ---
 
-# Inference Interface (Strict Requirement)
+## Feature Selection and Control
 
-Your inference must obey the interface defined in `infer.yaml`.
+Participants are free to keep, drop, or reorder features by editing only the following fields in both `train.yaml` and `infer.yaml`:
+
+features:
+  V: 16  
+  met_variables: [...]  
+  emission_variables: [...]  
+  single_variables: [...]  
+
+The default data loader is fully driven by these lists. Removing any feature from these lists automatically removes it from the model input. No other data-loading code changes are required.
+
+---
+
+## Preprocessing and Normalization
+
+The baseline code uses per-feature min-max normalization based on:
+
+data/stats/min_max.mat
+
+Participants are completely free to change normalization or standardization, apply custom preprocessing, add feature engineering, or use learned or statistical scaling. The only requirement is that your `infer.py` must correctly load and preprocess the official test data format.
+
+---
+
+## Test Data Format
+
+All test datasets will always be distributed such that each feature is stored in a separate NumPy file. Meteorological variables are stored in `savepath_met` and emission variables are stored in `savepath_emissions`.
+
+File naming format:
+
+<dataset>_<feature_name>.npy
 
 Example:
 
-```yaml
-paths:
-  savepath_emissions: data/emissions/
-  savepath_met: data/met/
-  output_file: experiments/baseline/eval/val.npy
+val_pm25.npy  
+val_q2.npy  
+val_PM25_e.npy  
+val_PM25_finn.npy  
+
+The dataset name is controlled from:
 
 data:
-  dataset: val     
-  ntest: 528
-  total_time: 26
-  time_input: 10
-  time_out: 16
-```
+  dataset: val
 
-We will change:
+in `infer.yaml`.
 
-* `dataset`
-* `ntest`
-* `output_file`
-* data paths
-
-Your code **must work without modification.**
+During official evaluation, only this field will be changed (for example: `test1`, `test2`). Your inference pipeline must rely on this naming convention.
 
 ---
 
-# Expected Output
+## Inference Interface and Evaluation
+
+During evaluation, the organizers will modify only the following fields in `infer.yaml`:
+
+paths:
+  savepath_emissions: data/emissions/  
+  savepath_met: data/met/  
+  output_file: experiments/baseline/eval/preds.npy  
+
+data:
+  dataset: val  
+  ntest: 528  
+  total_time: 26  
+  time_input: 10  
+  time_out: 16  
 
 Your `infer.py` must generate a NumPy file:
 
@@ -198,60 +213,40 @@ where:
 
 This file will be directly passed to the evaluation pipeline.
 
----
+Regardless of your model design (single-step, multi-step, autoregressive, etc.), evaluation is always performed on 16-hour forecasts.
 
-#  Forecasting Rule (Important)
-
-Every test sample:
-
-* always contains **10 input hours**
-* always requires **16 output hours**
-
-Even if your model predicts step-by-step internally, the **final submitted output must contain 16 hours.**
 
 ---
 
-# 🧪 Feature Selection
+## Submission Requirement
 
-You are **not required to use all features.**
+Participants must submit their full project directory in the same structure as this repository. The following must be synchronized with your best model:
 
-You may remove any variables simply by editing:
+- infer.py  
+- infer.yaml  
+- model definitions  
+- preprocessing pipeline  
 
-```yaml
-met_variables
-emission_variables
-single_variables
-```
+During evaluation, organizers will replace only dataset-related paths and sizes in `infer.yaml` and then directly execute:
 
-in both:
+python scripts/infer.py
 
-* `configs/train.yaml`
-* `configs/infer.yaml`
-
-The data loader will automatically adapt.
+All predictions will be generated exclusively through this interface.
 
 ---
 
-# 📚 FAQ
+## Important Notes
 
-Please refer to the **FAQ section** for:
+* Test sets will always contain exactly 10 hours of input and Final evaluation is always on 16-hour predictions. 
 
-* Data loading behavior
-* Normalization logic
-* Rain construction
-* Emission preprocessing
-* Multi-step inference
-* Evaluation format
-* Common runtime issues
+* The final hidden test set is never released and will only be evaluated by the organizers. Only prediction outputs are used for scoring.
 
----
-
-# 🏁 Final Notes
-
-* You may restructure internal modules freely
-* The only strict contract is:
+* You may restructure internal modules freely, the only strict contract is:
 
 > `infer.yaml` and `infer.py` must run correctly and produce the required output file.
+
+* Please refer to the FAQ section for data-loading clarifications, testing rules, and evaluation policies.
+
 
 ---
 
