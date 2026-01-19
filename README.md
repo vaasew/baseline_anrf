@@ -1,4 +1,4 @@
-# 🌍 Air Quality Forecasting Challenge — Baseline Repository
+# Country Level PM 2.5 Concentration Forecasting
 
 This repository provides the official **baseline code structure, data pipeline, and evaluation interface** for the Air Quality Forecasting Competition.
 
@@ -8,16 +8,36 @@ Participants are expected to build upon this repository to develop their own mod
 
 # 📌 Problem Overview
 
-The objective of this challenge is to **forecast PM2.5 concentration fields for the next 16 hours**, given the **first 10 hours of spatio-temporal input data**.
+Particulate Matter (PM) concentration is a major cause of concern in India with regards to
+public health since its levels can exceed the Indian standards by more than 10 times. PM 2.5 are
+fine particles that possess the ability to penetrate deep into the lungs and cause several health
+problems, including stroke, ischemic heart disease and Chronic Obstructive Pulmonary
+Disease (COPD). PM can enter the atmosphere by direct emission such as combustion
+processes, dust storms or through chemical reactions such as Sulphur Dioxide forming the
+sulphate particles. This PM mass can then undergo transport or deposition depending upon
+the meteorology of the region.
+The ability to forecast PM 2.5 concentrations can protect the health of the citizens from the
+elevated levels. Developing a surrogate model for numerical air pollution model can
 
-Each sample contains:
-
-* **10 hours of input**
-* **16 hours of target output**
-
-Regardless of your internal rollout strategy (single-step, autoregressive, multi-step, etc.), **final evaluation will always be done on 16 hours of prediction.**
+drastically reduce the time required to generate forecasts, provide quick insights and plan
+intervention strategies.
 
 ---
+
+# Core AI Tasks 
+
+The participants can choose one of the following tasks to model PM concentration over India:
+a. Neural Operator models
+b. Physics-Informed models
+c. Fine-tuning existing weather models such as Aurora, ClimaX
+
+
+Models post-2020 would be given preference (example operator learning).
+The relevant features which have been frequently used to model PM 2.5 concentration in the
+literature have been provided. The participants can develop a model which can take any
+combination of these features to output future PM 2.5 concentration, either one at a time or
+multi-step output.
+
 
 # 🧩 Available Input Features
 
@@ -60,17 +80,18 @@ Each emission input consists of **two components that are summed before normaliz
 ]
 ```
 
----
-
-## 🌱 Single Emission Variables (`single_variables`)
-
 ```
 ['NMVOC_e','NMVOC_finn','bio']
 ```
 
----
+The emission files consist of combined emissions of PM 2.5 , NOx, SO2, NH3 from biomass
+burning and anthropogenic emissions. The emissions of NMVOCs are kept separate for the
+two sources. Biogenic emissions of isoprene are also provided. Every month has its own file
+with the timestamps provided for each file. To avoid spin-off time, we suggest clipping the
+first 48 hours of data from each month’s files. Two other files provide the latitude and
+longitude configuration of these files.
 
-# 📊 Dataset Description
+---
 
 ##  Training Data
 
@@ -257,12 +278,15 @@ All predictions will be generated exclusively through this interface.
 
 Good luck, and we look forward to your solutions.
 
-evironment compatibility?
+environment compatibility?
 
-standardise docker environment - listing libraries allowed + a forum where participants can raise requests to include certain libraries which will be reviewed and decided on inclusion
+* standardise docker environment - listing libraries allowed + a forum where participants can raise requests to include certain libraries which will be reviewed and decided on inclusion
 
 ---
 or
----
 
-test sets with input time data given to participants and take output time data as deliverable and report results(only for test1)
+* test sets with input time(10 hours) data given to participants and they are asked to upload output.npy files which we will just run an evaluation script on and will report evaluation results and maintain a public leaderboard for test set 1. They can submit at max once a day.
+
+* for test set 2 it will be evaluated and results will be reported after the end of the competition.
+
+* to prevent participants from training their models with the provided input timesteps of test sets, we will include corrupt samples in the test sets and warn the users about the same, as now training with these time steps will spoil their model. During evaluation from our end of the submitted output.npy files we will evaluate only for the proper samples. This should de-incentivize training on these samples.
