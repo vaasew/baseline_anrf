@@ -1,6 +1,6 @@
 from src.utils.config import load_config
 cfg = load_config("configs/infer.yaml")
-from src.models.baseline import FNO2D
+from models.baseline_model import FNO2D
 
 import torch
 import numpy as np
@@ -51,6 +51,7 @@ def testing(model, forward_steps, test_loader, model_output_steps, name_file, d,
     return None
 
 
+dataset = cfg.data.dataset
 ntest = cfg.data.ntest
 total_time = cfg.data.total_time
 time_input = cfg.data.time_input
@@ -72,24 +73,41 @@ V = cfg.features.V
 modes = cfg.model.modes
 width = cfg.model.width
 
+checkpoint = torch.load(cfg.paths.checkpoint, map_location=device)
+
+
+print(f"[INFO] Running inference on dataset: {dataset}")
+
+
+
+def normalize_data(data, min_max, key, *, wind=False, clip=False):
+    """
+    data: np.ndarray [N, T, H, W]
+    key:  base name like 'pm25', 'NOx', 'rain_combined', 'NMVOCE'
+    """
+
+    maxx = float(min_max[f"{key}_max"])
+    minn = float(min_max[f"{key}_min"])
+    den = maxx - minn
+
+    if den == 0:
+        raise ValueError(f"{key}_max == {key}_min in min_max file")
+
+
+    if wind:
+        data = (2 * (data - minn) / den) - 1
+    else:
+        data = (data - minn) / den
+
+    if clip:
+        data = np.clip(data, 0, 1)
+
+    return data.astype(np.float32)
+
 
 
 def denormalisation(concentration, max_pm, min_pm):
     return (concentration * (max_pm.unsqueeze(-1) - min_pm.unsqueeze(-1))) + min_pm.unsqueeze(-1)
-
-
-checkpoint = torch.load(cfg.paths.checkpoint, map_location=device)
-
-model = FNO2D(
-    time_in=time_input,
-    features=V,
-    time_out=time_out,
-    width=width,
-    modes=modes,
-).to(device)
-
-model.load_state_dict(checkpoint['model_state_dict'])
-model.eval()
 
 min_max = io.loadmat(cfg.paths.min_max_file)
 
@@ -101,67 +119,82 @@ test = np.zeros((ntest, time_input + time_out, S1, S2, V), dtype = np.float32)
 counter = 0
 
 for met_variable in met_variables:
-    maxx = min_max[f'{met_variable}_max'].item()
-    minn = min_max[f'{met_variable}_min'].item()
-    den = (maxx-minn)
+    if met_variable=='rain':
+        continue
 
-    validation_path = os.path.join(savepath_met, f"anrf_val_{met_variable}.npy")
-    data = np.load(validation_path, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-    if met_variable in ['u10', 'v10']:
-        data = (2*(data - minn)/den) - 1
-    else:
-        data = (data - minn)/ den
+    test_path = os.path.join(savepath_met, f"{dataset}_{met_variable}.npy")
+    data = np.load(test_path, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
+
+    data = normalize_data(
+            data,
+            min_max,
+            key=met_variable,
+            wind=met_variable in ["u10", "v10"]
+            )
+
     test[:, :, :, :, counter] = data   
     counter = counter + 1
     del data
+    del test_path
 
 
-maxx = min_max[f'rain_combined_max'].item()
-minn = min_max[f'rain_combined_min'].item()
-den = maxx - minn
-validation_path_rainc = os.path.join(savepath_met, f"anrf_val_rainc.npy")
-validation_path_rainnc = os.path.join(savepath_met, f"anrf_val_rainnc.npy")
-data1 = np.load(validation_path_rainc, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-data2 = np.load(validation_path_rainnc, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-data = data1 + data2
-del data1, data2
-data = (data - minn)/den
-test[:, :, :, :, counter] = data
-counter = counter + 1
-del validation_path, validation_path_rainc, validation_path_rainnc, data
+if 'rain' in met_variables:
+ 
+    test_path_rainc = os.path.join(savepath_met, f"{dataset}_rainc.npy")
+    test_path_rainnc = os.path.join(savepath_met, f"{dataset}_rainnc.npy")
+    data1 = np.load(test_path_rainc, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
+    data2 = np.load(test_path_rainnc, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
+    data = data1 + data2
+    data = normalize_data(
+        data,
+        min_max,
+        key="rain_combined"
+    )
+
+    del data1, data2
+    test[:, :, :, :, counter] = data
+    counter = counter + 1
+    del test_path_rainc, test_path_rainnc, data
 
 
 for variables in emission_variables:
     pollutant = variables[0].split('_')[0]
 
-    maxx = min_max[f'{pollutant}_max'].item()
-    minn = min_max[f'{pollutant}_min'].item()
-    den = maxx - minn  
 
-    validation_path_v1 = os.path.join(savepath_emissions, f"anrf_val_{variables[0]}.npy")
-    validation_path_v2 = os.path.join(savepath_emissions, f"anrf_val_{variables[1]}.npy")
-    data1 = np.load(validation_path_v1, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-    data2 = np.load(validation_path_v2, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
+    test_path_v1 = os.path.join(savepath_emissions, f"{dataset}_{variables[0]}.npy")
+    test_path_v2 = os.path.join(savepath_emissions, f"{dataset}_{variables[1]}.npy")
+    data1 = np.load(test_path_v1, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
+    data2 = np.load(test_path_v2, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
     data = data1 + data2
     del data1, data2
-    data = (data - minn)/den
-    data = np.clip(data, 0, 1)
+
+    data = normalize_data(
+        data,
+        min_max,
+        key=pollutant,
+        clip=True
+    )
+
     test[:, :, :, :, counter] = data
     counter = counter + 1
     del data
 
 for k, met_variable in enumerate(single_variables):
 
-    maxx = min_max[f'{mean_names[k]}_max'].item()
-    minn = min_max[f'{mean_names[k]}_min'].item()
-    den = maxx - minn 
 
-    validation_path = os.path.join(savepath_emissions, f"anrf_val_{met_variable}.npy")
-    data = np.load(validation_path, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-    data = (data - minn)/den
+    test_path = os.path.join(savepath_emissions, f"{dataset}_{met_variable}.npy")
+    data = np.load(test_path, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
+
+    data = normalize_data(
+    data,
+    min_max,
+    key=mean_names[k]
+    )
+
     test[:, :, :, :, counter] = data
     counter = counter + 1
     del data
+
 if counter != V:
     print("Wrong assignment")
 
@@ -173,6 +206,17 @@ del test
 test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a), batch_size=1, shuffle=False)
 d = test_a.shape[0]
 del test_a
+
+model = FNO2D(
+    time_in=time_input,
+    features=V,
+    time_out=time_out,
+    width=width,
+    modes=modes,
+).to(device)
+
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
 
 os.makedirs(os.path.dirname(cfg.paths.output_file), exist_ok=True)
 testing(

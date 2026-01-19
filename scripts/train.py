@@ -1,6 +1,6 @@
 from src.utils.utilities3 import *
 from src.utils.adam import Adam
-from src.models.baseline import FNO2D
+from models.baseline_model import FNO2D
 
 from src.utils.config import load_config
 cfg = load_config("configs/train.yaml")
@@ -55,116 +55,157 @@ scheduler_gamma = cfg.training.scheduler_gamma
 def denormalisation(concentration, max_pm, min_pm):
     return (concentration * (max_pm.unsqueeze(-1) - min_pm.unsqueeze(-1))) + min_pm.unsqueeze(-1)
 
+# -------------------------------
+# Normalization helper
+# -------------------------------
+
+def normalize_data(data, min_max, key, *, wind=False, clip=False):
+    maxx = float(min_max[f"{key}_max"])
+    minn = float(min_max[f"{key}_min"])
+    den = maxx - minn
+
+    if den == 0:
+        raise ValueError(f"{key}_max == {key}_min")
+
+    if wind:
+        data = (2 * (data - minn) / den) - 1
+    else:
+        data = (data - minn) / den
+
+    if clip:
+        data = np.clip(data, 0, 1)
+
+    return data.astype(np.float32)
+
+
+# -------------------------------
+# Load min-max statistics
+# -------------------------------
+
 min_max = io.loadmat(cfg.paths.min_max_file)
-min_max_pm = np.zeros((1, 1, 2), dtype = np.float32)
-min_max_pm[:, :, 0] = min_max['pm25_max']
-min_max_pm[:, :, 1] = min_max['pm25_min']
-min_max_tensor = torch.tensor(min_max_pm, dtype = torch.float32)
-del min_max_pm
 
 
+# -------------------------------
+# Allocate arrays
+# -------------------------------
 
+total = np.zeros((ntrain, time_input + time_out, S1, S2, V), dtype=np.float32)
+test  = np.zeros((ntest,  time_input + time_out, S1, S2, V), dtype=np.float32)
 
-total = np.zeros((ntrain, time_input + time_out, S1, S2, V), dtype = np.float32)
-test = np.zeros((ntest, time_input + time_out, S1, S2, V), dtype = np.float32)
-##open a file normalise add to total
 counter = 0
-#First all met variables then combined rain, then combined emissions, then single emissions
+
+
+# -------------------------------
+# Meteorology variables
+# -------------------------------
+
 for met_variable in met_variables:
-    train_1_path = os.path.join(savepath_met, f"train_{met_variable}.npy")
-    maxx = min_max[f'{met_variable}_max']
-    minn = min_max[f'{met_variable}_min']
-    den = (maxx-minn)
-    data = np.load(train_1_path, mmap_mode="r")[:, :time_input + time_out, :, :]
-    if met_variable in ['u10', 'v10']:
-        data = (2*(data - minn)/ den) - 1
-    else:
-        data = (data - minn)/ den
-    total[:, :, :, :, counter] = data
+    if met_variable == "rain":
+        continue
 
-    validation_path = os.path.join(savepath_met, f"val_{met_variable}.npy")
-    data = np.load(validation_path, mmap_mode = "r")[:, :time_input + time_out, :, :]
-    if met_variable in ['u10', 'v10']:
-        data = (2*(data - minn)/ den) - 1
-    else:
-        data = (data - minn)/ den
-    test[:, :, :, :, counter] = data   
-    counter = counter + 1
-    del data
-    
-train_1_path_rainc = os.path.join(savepath_met, f"train_rainc.npy")
-train_1_path_rainnc = os.path.join(savepath_met, f"train_rainnc.npy")
+    train_path = os.path.join(savepath_met, f"train_{met_variable}.npy")
+    val_path   = os.path.join(savepath_met, f"val_{met_variable}.npy")
 
+    train_data = np.load(train_path, mmap_mode="r")[:, :time_input + time_out]
+    val_data   = np.load(val_path,   mmap_mode="r")[:, :time_input + time_out]
 
-maxx = min_max[f'rain_combined_max']
-minn = min_max[f'rain_combined_min']
-den = maxx - minn
+    train_data = normalize_data(
+        train_data, min_max, met_variable,
+        wind=met_variable in ["u10", "v10"]
+    )
+    val_data = normalize_data(
+        val_data, min_max, met_variable,
+        wind=met_variable in ["u10", "v10"]
+    )
 
-data1 = np.load(train_1_path_rainc, mmap_mode="r")[:, :time_input + time_out, :, :]
-data2 = np.load(train_1_path_rainnc, mmap_mode="r")[:, :time_input + time_out, :, :]
-data = data1 + data2
-del data1, data2
-data = (data - minn)/ den
-total[:, :, :, :, counter] = data
+    total[..., counter] = train_data
+    test[...,  counter] = val_data
+    counter += 1
+
+    del train_data, val_data
 
 
-validation_path_rainc = os.path.join(savepath_met, f"val_rainc.npy")
-validation_path_rainnc = os.path.join(savepath_met, f"val_rainnc.npy")
-data1 = np.load(validation_path_rainc, mmap_mode = "r")[:, :time_input + time_out, :, :]
-data2 = np.load(validation_path_rainnc, mmap_mode = "r")[:, :time_input + time_out, :, :]
-data = data1 + data2
-del data1, data2
-data = (data - minn)/ den
-test[:, :, :, :, counter] = data
-counter = counter + 1
-del validation_path, validation_path_rainc, validation_path_rainnc, train_1_path
-del train_1_path_rainc, train_1_path_rainnc
+# -------------------------------
+# Rain (combined)
+# -------------------------------
+
+if "rain" in met_variables:
+
+    train_rain = (
+        np.load(os.path.join(savepath_met, "train_rainc.npy"),  mmap_mode="r")[:, :time_input + time_out] +
+        np.load(os.path.join(savepath_met, "train_rainnc.npy"), mmap_mode="r")[:, :time_input + time_out]
+    )
+
+    val_rain = (
+        np.load(os.path.join(savepath_met, "val_rainc.npy"),  mmap_mode="r")[:, :time_input + time_out] +
+        np.load(os.path.join(savepath_met, "val_rainnc.npy"), mmap_mode="r")[:, :time_input + time_out]
+    )
+
+    train_rain = normalize_data(train_rain, min_max, "rain_combined")
+    val_rain   = normalize_data(val_rain,   min_max, "rain_combined")
+
+    total[..., counter] = train_rain
+    test[...,  counter] = val_rain
+    counter += 1
+
+    del train_rain, val_rain
+
+
+# -------------------------------
+# Emission variables
+# -------------------------------
 
 for variables in emission_variables:
-    pollutant = variables[0].split('_')[0]
-    train_1_path_v1 = os.path.join(savepath_emissions, f"train_{variables[0]}.npy")
-    train_1_path_v2 = os.path.join(savepath_emissions, f"train_{variables[1]}.npy")
+    pollutant = variables[0].split("_")[0]
+
+    train_data = (
+        np.load(os.path.join(savepath_emissions, f"train_{variables[0]}.npy"), mmap_mode="r")[:, :time_input + time_out] +
+        np.load(os.path.join(savepath_emissions, f"train_{variables[1]}.npy"), mmap_mode="r")[:, :time_input + time_out]
+    )
+
+    val_data = (
+        np.load(os.path.join(savepath_emissions, f"val_{variables[0]}.npy"), mmap_mode="r")[:, :time_input + time_out] +
+        np.load(os.path.join(savepath_emissions, f"val_{variables[1]}.npy"), mmap_mode="r")[:, :time_input + time_out]
+    )
+
+    train_data = normalize_data(train_data, min_max, pollutant, clip=True)
+    val_data   = normalize_data(val_data,   min_max, pollutant, clip=True)
+
+    total[..., counter] = train_data
+    test[...,  counter] = val_data
+    counter += 1
+
+    del train_data, val_data
 
 
-    maxx = min_max[f'{pollutant}_max']
-    minn = min_max[f'{pollutant}_min']
-    den = maxx - minn
-    
-    data1 = np.load(train_1_path_v1, mmap_mode="r")[:, :time_input + time_out, :, :]
-    data2 = np.load(train_1_path_v2, mmap_mode="r")[:, :time_input + time_out, :, :]
-    data = data1 + data2
-    del data1, data2
-    data = (data - minn)/ den
-    total[:, :, :, :, counter] = data
+# -------------------------------
+# Single variables
+# -------------------------------
 
-
-    validation_path_v1 = os.path.join(savepath_emissions, f"val_{variables[0]}.npy")
-    validation_path_v2 = os.path.join(savepath_emissions, f"val_{variables[1]}.npy")
-    data1 = np.load(validation_path_v1, mmap_mode = "r")[:, :time_input + time_out, :, :]
-    data2 = np.load(validation_path_v2, mmap_mode = "r")[:, :time_input + time_out, :, :]
-    data = data1 + data2
-    del data1, data2
-    data = (data - minn)/ den
-    test[:, :, :, :, counter] = data
-    counter = counter + 1
-    del data
-    
 for k, met_variable in enumerate(single_variables):
-    train_1_path = os.path.join(savepath_emissions, f"train_{met_variable}.npy")
-    maxx = min_max[f'{mean_names[k]}_max']
-    minn = min_max[f'{mean_names[k]}_min']
-    den = maxx - minn   
-    data = np.load(train_1_path, mmap_mode="r")[:, :time_input + time_out, :, :]
-    data = (data - minn)/ den
-    total[:, :, :, :, counter] = data
+
+    train_path = os.path.join(savepath_emissions, f"train_{met_variable}.npy")
+    val_path   = os.path.join(savepath_emissions, f"val_{met_variable}.npy")
+
+    train_data = np.load(train_path, mmap_mode="r")[:, :time_input + time_out]
+    val_data   = np.load(val_path,   mmap_mode="r")[:, :time_input + time_out]
+
+    train_data = normalize_data(train_data, min_max, mean_names[k])
+    val_data   = normalize_data(val_data,   min_max, mean_names[k])
+
+    total[..., counter] = train_data
+    test[...,  counter] = val_data
+    counter += 1
+
+    del train_data, val_data
 
 
-    validation_path = os.path.join(savepath_emissions, f"val_{met_variable}.npy")
-    data = np.load(validation_path, mmap_mode = "r")[:, :time_input + time_out, :, :]
-    data = (data - minn)/ den
-    test[:, :, :, :, counter] = data
-    counter = counter + 1
-    del data
+# -------------------------------
+# Safety check
+# -------------------------------
+
+if counter != V:
+    raise ValueError(f"Feature mismatch: counter={counter}, V={V}")
 
 
 train_a = torch.tensor(total[:ntrain, :time_input, :, :, :], dtype = torch.float32)
@@ -187,8 +228,8 @@ del test_u, test_a
 
 T = cfg.data.time_out
 weights = np.array([math.exp((i+1)/T) for i in range(T)])
-total = np.sum(weights)
-weights = weights/total
+wsum = np.sum(weights)
+weights = weights / wsum
 print(weights)
 w = torch.tensor(weights, dtype=torch.float32, device=device)
 w = w.view(1, 1, 1, T)
@@ -219,14 +260,15 @@ scheduler = torch.optim.lr_scheduler.StepLR(
 
 
 
-min_max_tensor = min_max_tensor.to(device)
-del min_max
-
 path1 = cfg.paths.model_save_path
 log_save = cfg.paths.save_dir
 
 myloss = LpLoss_weighted(weights = weights, size_average=False)
 log = []
+
+os.makedirs(os.path.dirname(log_save), exist_ok=True)
+os.makedirs(os.path.dirname(path1), exist_ok=True)
+
 
 for ep in tqdm(range(epochs)):
     model.train()
