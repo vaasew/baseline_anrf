@@ -93,7 +93,7 @@ longitude configuration of these files.
 
 ##  Training Data
 
-Training samples are constructed from the following months in **2016**:
+Hourly data for each feature is provided for the following months in **2016**:
 
 * April 2016
 * July 2016
@@ -108,16 +108,15 @@ Evaluation will be performed on **data from multiple months from 2017**.
 
 There are **two test sets**:
 
-### 🔓 Public Test Set
+### 🔓 Test Set 1
 
-* Smaller subset
-* Participants can see their evaluation scores
+* Participants can see their evaluation scores on this test set.
 * Feeds into a **public leaderboard**
 * Leaderboard updates once every 1–2 days
 
-### 🔒 Private Hidden Test Set
+### 🔒 Test Set 2
 
-* Never accessible during the competition
+* Completely private and never accessible during the competition
 * Final rankings are based **only** on this set
 * Dataset and results will be released **after the competition ends**
 
