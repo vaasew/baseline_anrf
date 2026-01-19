@@ -23,12 +23,13 @@ intervention strategies.
 
 # Core AI Tasks 
 
-The participants can choose one of the following tasks to model PM concentration over India:
-a. Neural Operator models \\
-b. Physics-Informed models \\
-c. Fine-tuning existing weather models such as Aurora, ClimaX \\
-\\
+The participants can choose one of the following tasks to model PM concentration over India:\
 
+a. Neural Operator models \
+b. Physics-Informed models \
+c. Fine-tuning existing weather models such as Aurora, ClimaX \
+
+\
 Models post-2020 would be given preference (example operator learning).
 The relevant features which have been frequently used to model PM 2.5 concentration in the
 literature have been provided. The participants can develop a model which can take any
