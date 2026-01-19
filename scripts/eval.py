@@ -38,7 +38,7 @@ os.makedirs(save_dir, exist_ok=True)
 # Load prediction
 # -----------------------
 
-pred = np.load(pred_path)                  # (N, H, W, T)
+pred = np.load(pred_path)                 
 pred = pred.astype(np.float32)
 
 
@@ -46,9 +46,9 @@ pred = pred.astype(np.float32)
 # Load actual
 # -----------------------
 
-act = np.load(actual_path)                 # (N, T_total, H, W)
-act = np.transpose(act, (0, 2, 3, 1))      # (N, H, W, T_total)
-act = act[..., time_in:]                   # keep only forecast horizon
+act = np.load(actual_path)                
+act = np.transpose(act, (0, 2, 3, 1))     
+act = act[..., time_in:]                  
 
 
 # -----------------------
@@ -58,7 +58,7 @@ act = act[..., time_in:]                   # keep only forecast horizon
 domain_results = {}
 
 for name, fn in metrics.items():
-    res = fn(act, pred)                    # (N, H, W, T)
+    res = fn(act, pred)                   
     domain_results[name] = np.nanmean(res, axis=(0,1,2))   # mean over N,H,W
 
 df_domain = pd.DataFrame(domain_results)
@@ -87,12 +87,11 @@ for city, pts in cities.items():
     city_row = {"city": city}
 
     for name, fn in metrics.items():
-        res = fn(city_act, city_pred)                   # (N,1,1,T)
-        city_row[name] = np.nanmean(res, axis=(0,1,2))  # (T,)
+        res = fn(city_act, city_pred)                   
+        city_row[name] = np.nanmean(res, axis=(0,1,2))  
 
     rows.append(city_row)
 
-# explode into per-hour columns
 final_rows = []
 
 T = rows[0]["rmse"].shape[0]
