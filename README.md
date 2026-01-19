@@ -131,11 +131,14 @@ This section describes the available input features, how feature selection is co
 
 Participants are free to keep, drop, or reorder features by editing only the following fields in both `train.yaml` and `infer.yaml`:
 
+```
 features:
   V: 16  
   met_variables: [...]  
   emission_variables: [...]  
-  single_variables: [...]  
+  single_variables: [...] 
+```
+`V refers to number of features`
 
 The default data loader is fully driven by these lists. Removing any feature from these lists automatically removes it from the model input. No other data-loading code changes are required.
 
