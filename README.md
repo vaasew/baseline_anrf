@@ -157,7 +157,7 @@ All test datasets will always be distributed such that each feature is stored in
 
 File naming format:
 
-<dataset>_<feature_name>.npy
+<dataset_name>_<feature_name>.npy
 
 Example:
 
@@ -166,7 +166,7 @@ val_q2.npy
 val_PM25_e.npy  
 val_PM25_finn.npy  
 
-The dataset name is controlled from:
+The dataset_name is controlled from:
 
 data:
   dataset: val
@@ -239,7 +239,7 @@ All predictions will be generated exclusively through this interface.
 
 * Test sets will always contain exactly 10 hours of input and Final evaluation is always on 16-hour predictions. 
 
-* The final hidden test set is never released and will only be evaluated by the organizers. Only prediction outputs are used for scoring.
+* The final results are based solely on the hidden test set which would be made public along with the results after the competition deadline.
 
 * You may restructure internal modules freely, the only strict contract is:
 
