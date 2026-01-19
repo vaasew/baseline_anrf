@@ -23,7 +23,7 @@ intervention strategies.
 
 # Core AI Tasks 
 
-The participants can choose one of the following tasks to model PM concentration over India:\
+The participants can choose one of the following tasks to model PM concentration over India: \
 
 a. Neural Operator models \
 b. Physics-Informed models \
