@@ -256,3 +256,9 @@ Please refer to the **FAQ section** for:
 ---
 
 Good luck, and we look forward to your solutions.
+
+evironment compatibility?
+
+standardise docker environment - listing libraries allowed + a forum where participants can raise requests to include certain libraries which will be reviewed and decided on inclusion
+or
+test sets given to input time data given to participants and take output time data as deliverable and report results(only for test1)
