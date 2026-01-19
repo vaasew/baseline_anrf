@@ -183,7 +183,7 @@ During official evaluation, only this field will be changed (for example: `test1
 ## Inference Interface and Evaluation
 
 During evaluation, the organizers will modify only the following fields in `infer.yaml`:
-
+```
 paths:
   savepath_emissions: data/emissions/  
   savepath_met: data/met/  
@@ -195,6 +195,7 @@ data:
   total_time: 26  
   time_input: 10  
   time_out: 16  
+```
 
 Your `infer.py` must generate a NumPy file:
 
