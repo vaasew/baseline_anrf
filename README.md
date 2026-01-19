@@ -265,4 +265,4 @@ standardise docker environment - listing libraries allowed + a forum where parti
 or
 ---
 
-test sets given to input time data given to participants and take output time data as deliverable and report results(only for test1)
+test sets with input time data given to participants and take output time data as deliverable and report results(only for test1)
