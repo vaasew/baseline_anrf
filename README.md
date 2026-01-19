@@ -9,16 +9,13 @@ Participants are expected to build upon this repository to develop their own mod
 # 📌 Problem Overview
 
 Particulate Matter (PM) concentration is a major cause of concern in India with regards to
-public health since its levels can exceed the Indian standards by more than 10 times. PM 2.5 are
-fine particles that possess the ability to penetrate deep into the lungs and cause several health
-problems, including stroke, ischemic heart disease and Chronic Obstructive Pulmonary
-Disease (COPD). PM can enter the atmosphere by direct emission such as combustion
+public health since its levels can exceed the Indian standards by more than 10 times. PM 2.5 are fine particles that possess the ability to penetrate deep into the lungs and cause several health problems, including stroke, ischemic heart disease and Chronic Obstructive Pulmonary Disease (COPD). PM can enter the atmosphere by direct emission such as combustion
 processes, dust storms or through chemical reactions such as Sulphur Dioxide forming the
-sulphate particles. This PM mass can then undergo transport or deposition depending upon
-the meteorology of the region.
-The ability to forecast PM 2.5 concentrations can protect the health of the citizens from the
-elevated levels. Developing a surrogate model for numerical air pollution model can
+sulphate particles. 
 
+This PM mass can then undergo transport or deposition depending upon
+the meteorology of the region.
+The ability to forecast PM 2.5 concentrations can protect the health of the citizens from the elevated levels. Developing a surrogate model for numerical air pollution model can
 drastically reduce the time required to generate forecasts, provide quick insights and plan
 intervention strategies.
 
