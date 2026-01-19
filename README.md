@@ -278,18 +278,19 @@ Good luck, and we look forward to your solutions.
 
 other deliverables and queries from our side -
 
-1. one notebook containing verbose dataset information, sample plotting and viewing of features and some manipulation, training tips will be made and uploaded in notebooks/
+1. one notebook containing verbose dataset information, sample plotting and viewing of features and some manipulation, training tips will be made and uploaded in notebooks
 
 2. adding a faq section
 
 3. evaluation method and environment compatibility?
 
-* the case if we are running infer.py and eval from our side => 
-standardise docker environment - listing libraries and versions allowed + a forum where participants can raise requests to include certain libraries which will be reviewed and decided on inclusion \
+ the case if we are running infer.py and eval from our side => 
+
+* standardise docker environment - listing libraries and versions allowed + a forum where participants can raise requests to include certain libraries which will be reviewed and decided on inclusion 
 
 or
 
-* the case if we only accept uploaded eval results for test sets as numpy files from them=>
+the case if we only accept uploaded eval results for test sets as numpy files from them=>
 
 * test sets with input time(10 hours) data given to participants and they are asked to upload output.npy files which we will just run an evaluation script on and will report evaluation results and maintain a public leaderboard for test set 1. They can submit at max once a day.
 
