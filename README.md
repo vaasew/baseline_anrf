@@ -21,7 +21,8 @@ Regardless of your internal rollout strategy (single-step, autoregressive, multi
 
 # 🧩 Available Input Features
 
-The dataset provides three groups of variables. **All are optional.**
+The dataset provides three groups of features. **All are optional.**
+
 Participants may use any subset by editing the lists in `train.yaml` and `infer.yaml`.
 
 ---
