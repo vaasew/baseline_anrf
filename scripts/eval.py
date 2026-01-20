@@ -18,9 +18,7 @@ cfg = load_config("configs/eval.yaml")
 pred_path   = cfg.paths.pred_path
 actual_path = cfg.paths.actual_path
 save_dir    = cfg.paths.save_dir
-
 f_type   = cfg.data.dataset
-ntest    = cfg.data.ntest
 time_in  = cfg.data.time_input
 
 cities = cfg.cities
@@ -34,12 +32,22 @@ metrics = {
 os.makedirs(save_dir, exist_ok=True)
 
 
+min_max = io.loadmat(cfg.paths.min_max_file)
+
+max_pm = float(min_max["pm25_max"])
+min_pm = float(min_max["pm25_min"])
+
+def denorm(x):
+    return x * (max_pm - min_pm) + min_pm
+
+
 # -----------------------
 # Load prediction
 # -----------------------
 
 pred = np.load(pred_path)                 
 pred = pred.astype(np.float32)
+pred = denorm(pred)
 
 
 # -----------------------
@@ -73,7 +81,7 @@ print("Saved domain evaluation.")
 
 rows = []
 
-for city, pts in cities.items():
+for city, pts in vars(cities).items():
 
     act_list, pred_list = [], []
 

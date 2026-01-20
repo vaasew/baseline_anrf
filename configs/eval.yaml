@@ -2,10 +2,10 @@ paths:
   pred_path: experiments/baseline/eval/val.npy
   actual_path: data/met/val_pm25.npy
   save_dir: experiments/baseline/results/
+  min_max_file: data/stats/min_max.mat
 
 data:
   dataset: val
-  ntest: 528
   time_input: 10
 
 cities:
