@@ -59,7 +59,7 @@ domain_results = {}
 
 for name, fn in metrics.items():
     res = fn(act, pred)                   
-    domain_results[name] = np.nanmean(res, axis=(0,1,2))   # mean over N,H,W
+    domain_results[name] = np.nanmean(res, axis=(0))  
 
 df_domain = pd.DataFrame(domain_results)
 df_domain.to_csv(os.path.join(save_dir, f"{f_type}_domain.csv"), index=False)
@@ -88,7 +88,7 @@ for city, pts in cities.items():
 
     for name, fn in metrics.items():
         res = fn(city_act, city_pred)                   
-        city_row[name] = np.nanmean(res, axis=(0,1,2))  
+        city_row[name] = np.nanmean(res, axis=(0))  
 
     rows.append(city_row)
 
