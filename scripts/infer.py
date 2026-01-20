@@ -1,5 +1,3 @@
-from src.utils.config import load_config
-cfg = load_config("configs/infer.yaml")
 from models.baseline_model import FNO2D
 
 import torch
@@ -7,6 +5,13 @@ import numpy as np
 from scipy import io
 import os
 from utils.utilities3 import *  
+
+# -----------------------
+# Load config
+# -----------------------
+
+from src.utils.config import load_config
+cfg = load_config("configs/infer.yaml")
 
 
 torch.manual_seed(0)
@@ -50,6 +55,11 @@ def testing(model, forward_steps, test_loader, model_output_steps, name_file, d,
 
     return None
 
+
+
+# -----------------------
+# Settings from YAML
+# -----------------------
 
 dataset = cfg.data.dataset
 ntest = cfg.data.ntest
