@@ -4,7 +4,7 @@ paths:
   savepath_emissions: data/emissions
 
 data:
-  months: ["APRIL_16_HOURLY"]
+  months: ["APRIL_16_HOURLY",'JULY_16_HOURLY','OCT_16_HOURLY','DEC_16_HOURLY']
   horizon: 26
   stride: 1
   spin_up: 48
@@ -14,10 +14,25 @@ data:
 features:
   met_variables_raw:
     - pm25
+    - q2
     - t2
+    - u10
+    - v10
+    - swdown
+    - pblh
+    - psfc
     - rainc
     - rainnc
 
   emission_variables_raw:
     - PM25_e
     - PM25_finn
+    - NH3_e
+    - NH3_finn
+    - SO2_e
+    - SO2_finn
+    - NOx_e
+    - NOx_finn
+    - NMVOC_e
+    - NMVOC_finn
+    - bio
