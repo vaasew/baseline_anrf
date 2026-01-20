@@ -79,7 +79,10 @@ print("Saved domain evaluation.")
 # City-wise evaluation
 # -----------------------
 
-rows = []
+save_dir = os.path.join(cfg.paths.save_dir, "cities")
+os.makedirs(save_dir, exist_ok=True)
+
+T = pred.shape[-1]
 
 for city, pts in vars(cities).items():
 
@@ -92,27 +95,19 @@ for city, pts in vars(cities).items():
     city_act = np.mean(np.stack(act_list, axis=0), axis=0)
     city_pred = np.mean(np.stack(pred_list, axis=0), axis=0)
 
-    city_row = {"city": city}
+    rows = []
 
-    for name, fn in metrics.items():
-        res = fn(city_act, city_pred)                   
-        city_row[name] = np.nanmean(res, axis=(0))  
-
-    rows.append(city_row)
-
-final_rows = []
-
-T = rows[0]["rmse"].shape[0]
-
-for r in rows:
     for t in range(T):
-        final_rows.append({
-            "city": r["city"],
-            "hour": t+1,
-            "rmse": r["rmse"][t],
-            "smape": r["smape"][t],
-            "mfb": r["mfb"][t]
-        })
 
-df_city = pd.DataFrame(final_rows)
-df_city.to_csv(os.path.join(save_dir, f"{f_type}_cities.csv"), index=False)
+        row = {"hour": t+1}
+
+        for name, fn in metrics.items():
+            res = fn(city_act, city_pred)      # (N, T)
+            row[name] = np.nanmean(res[:, t])
+
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+    df.to_csv(os.path.join(save_dir, f"{cfg.data.dataset}_{city}.csv"), index=False)
+
+    print(f"saved {city} results")
