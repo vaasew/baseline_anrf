@@ -1,4 +1,7 @@
-utils/__pycache__
+# Jupyter
+*.ipynb_checkpoints
+
+# Model checkpoints / weights
 *.pt
 *.pth
 *.ckpt
@@ -7,6 +10,7 @@ utils/__pycache__
 *.pb
 *.onnx
 
+# Data files
 *.npy
 *.npz
 *.mat
@@ -15,4 +19,3 @@ utils/__pycache__
 *.csv
 *.parquet
 *.feather
-
