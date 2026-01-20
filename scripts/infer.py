@@ -218,13 +218,13 @@ model = FNO2D(
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
-os.makedirs(os.path.dirname(cfg.paths.output_file), exist_ok=True)
+os.makedirs(os.path.dirname(cfg.paths.output_loc), exist_ok=True)
 testing(
     model,
     cfg.inference.forward_steps,
     test_loader,
     cfg.data.time_out,
-    cfg.paths.output_file,
+    os.path.join(cfg.paths.output_loc,f'{dataset}.npy'),
     d, V, time_input, lat, long
 )
 

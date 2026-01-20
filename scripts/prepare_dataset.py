@@ -13,7 +13,7 @@ RAW_PATH  = cfg.paths.raw_path
 
 
 # -----------------------
-# Utilities
+# Helper Functions
 # -----------------------
 
 def train_val_split(samples, val_frac=0.2, seed=0):

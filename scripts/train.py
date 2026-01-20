@@ -2,6 +2,10 @@ from src.utils.utilities3 import *
 from src.utils.adam import Adam
 from models.baseline_model import FNO2D
 
+# -----------------------
+# Load config
+# -----------------------
+
 from src.utils.config import load_config
 cfg = load_config("configs/train.yaml")
 
@@ -25,6 +29,11 @@ if device.type == "cuda":
 
 torch.manual_seed(0)
 np.random.seed(0)
+
+
+# -----------------------
+# Settings from YAML
+# -----------------------
 
 ntrain = cfg.data.ntrain
 ntest = cfg.data.ntest
@@ -243,13 +252,15 @@ model = FNO2D(
     modes=cfg.model.modes,
 ).to(device)
 
+def count_params(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-print(count_params(model))
+print("Total parameters:", count_params(model))
 
 optimizer = Adam(
     model.parameters(),
     lr=cfg.training.lr,
-    weight_decay=cfg.training.weight_decay
+    weight_decay=float(cfg.training.weight_decay)
 )
 
 scheduler = torch.optim.lr_scheduler.StepLR(
