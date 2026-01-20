@@ -48,23 +48,27 @@ The data contains:
   * `rainnc`
   * `PM25_e`
   * `PM25_f`
+
+  stored in the form - 
+  `APRIL_2016_HOURLY_<feature_name>.npy`
+
 * Normalization file(for pre-processing):
 
   * `min_max.mat`
 
 ---
 
-# 3️⃣ Place Files in Correct Directories (Very Important)
+# 3️⃣ Place Files in Correct Directories
 
 ### 🔹 Feature files
 
-All feature files must be named in this format:
+Place all features of the form -
 
 ```
 APRIL_2016_HOURLY_<feature_name>.npy
 ```
 
-Place them inside:
+inside:
 
 ```
 data/raw/
@@ -101,15 +105,18 @@ data/
 ```
 
 ---
-
 # 4️⃣ Run the Demo Pipeline
 
-You can run the full pipeline in **one command**.
+Before running the demo, **ensure your environment is properly set up**
+(required packages installed, correct Python environment activated, CUDA configured if using a GPU, paths updated if needed).
+
+Both options below execute the **entire pipeline end-to-end**.
 
 ---
 
-## ✅ Option A: Local machine
+## ✅ Option A: Run locally
 
+Activate your environment, then run:
 
 ```bash
 bash run.sh
@@ -117,19 +124,28 @@ bash run.sh
 
 ---
 
-## ✅ Option B: HPC cluster
+## ✅ Option B: Run on an HPC cluster
+
+Submit the job script:
 
 ```bash
 qsub run_job.pbs
 ```
 
-(Modify `run_job.pbs` if your environment paths differ.)
+Before submitting, **edit `run_job.pbs` as per your system setup**
+(module loads, environment activation, paths, GPU settings, etc.).
+The provided file is only a **boilerplate template**.
 
 ---
+
+
+
 
 # 5️⃣ What the Pipeline Does
 
 Running `run.sh` or `run_job.pbs` will automatically execute the following stages:
+
+**dataset preparation → training → inference → evaluation**
 
 ---
 
@@ -143,17 +159,30 @@ prepare_dataset.py
 
 Using:
 
-* `prepare_dataset.yaml`
-* Raw data from `data/raw/`
+* Configuration from:
 
-Creates time-series samples and stores train and validation sets for each feature in:
+  ```
+  prepare_dataset.yaml
+  ```
+* Raw feature files from:
+
+  ```
+  data/raw/
+  ```
+
+Creates time-series samples and stores **training and validation sets for each feature** in:
 
 ```
 data/met/
 data/emissions/
 ```
 
-Each contains `train_<feature_name>.npy` and `val_<feature_name>.npy`.
+Each directory contains:
+
+```
+train_<feature_name>.npy
+val_<feature_name>.npy
+```
 
 ---
 
@@ -167,16 +196,26 @@ train.py
 
 Using:
 
-* `train.yaml`
+* Configuration from:
+
+  ```
+  train.yaml
+  ```
+* Training and validation samples from:
+
+  ```
+  data/met/
+  data/emissions/
+  ```
 
 Outputs:
 
-* Model checkpoints
+* Model checkpoints:
 
   ```
   experiments/demo/checkpoints/*.pt
   ```
-* Training logs
+* Training logs:
 
   ```
   experiments/demo/logs/
@@ -194,7 +233,16 @@ infer.py
 
 Using:
 
-* `infer.yaml`
+* Configuration from:
+
+  ```
+  infer.yaml
+  ```
+* Trained model checkpoint:
+
+  ```
+  experiments/demo/checkpoints/demo_model_ep49.pt
+  ```
 
 Outputs:
 
@@ -202,7 +250,7 @@ Outputs:
 experiments/demo/infer/val.npy
 ```
 
-(predictions on validation data)
+(Stored validation set predictions)
 
 ---
 
@@ -216,24 +264,45 @@ eval.py
 
 Using:
 
-* `eval.yaml`
+* Configuration from:
 
-Outputs:
+  ```
+  eval.yaml
+  ```
+* Model predictions on the validation set (first 10 hours):
 
-### Whole-domain metrics
+  ```
+  experiments/demo/infer/val.npy
+  ```
+* Reference validation targets (last 16 hours):
+
+  ```
+  data/met/val_pm25.npy
+  ```
+
+This step computes error metrics and generates the final evaluation CSV files.
+
+---
+
+### ✔️ Whole-domain metrics
 
 ```
 experiments/demo/eval_results/val_domain.csv
 ```
 
-### City-wise metrics
+### ✔️ City-wise metrics
 
 ```
 experiments/demo/eval_results/cities/*.csv
 ```
 
----
+Each city has a different csv. Ex-
 
+```
+experiments/demo/eval_results/cities/delhi.csv
+```
+
+---
 
 # Demo Run Complete
 
