@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#PBS -N run_demo
+#PBS -P m3rg.spons
+#PBS -m bea
+#PBS -M $USER@scai.iitd.ac.in
+#PBS -l select=1:ncpus=1:mem=5gb:centos=icelake
+#PBS -l walltime=00:30:00
+#PBS -q standard
+#################  Environment #################################
+echo "==============================="
+echo $PBS_JOBID
+cat $PBS_NODEFILE
+echo "==============================="
+cd $PBS_O_WORKDIR
+echo "PBS_O_WORKDIR = $PBS_O_WORKDIR"
+
+
+source /home/scai/msr/aiy257585/.bashrc
+conda activate /home/scai/msr/aiy257585/envs/env1
+
+export PYTHONPATH=$(pwd)
+
+bash run.sh
+
