@@ -1,13 +1,11 @@
 experiment:
-  device: cuda
   name: baseline
 
 paths:
   savepath_emissions: data/emissions/
   savepath_met: data/met/
-  checkpoint: experiments/baseline/checkpoints/fno_baseline_ep300.pt
-  output_file: experiments/baseline/eval/val.npy
-
+  checkpoint: experiments/baseline/checkpoints/fno_baseline_ep499.pt
+  output_loc: experiments/baseline/infer/
   min_max_file: data/stats/min_max.mat
 
 data:

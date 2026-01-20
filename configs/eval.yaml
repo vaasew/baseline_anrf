@@ -1,7 +1,7 @@
 paths:
-  pred_path: experiments/baseline/eval/val.npy
+  pred_path: experiments/baseline/infer/val.npy
   actual_path: data/met/val_pm25.npy
-  save_dir: experiments/baseline/results/
+  save_dir: experiments/baseline/results/eval_results/
   min_max_file: data/stats/min_max.mat
 
 data:
