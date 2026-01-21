@@ -62,7 +62,7 @@ APRIL_16_HOURLY_rainc.npy
 APRIL_16_HOURLY_times.npy
 <Month>_<YY>_HOURLY_times.npy  
 ```
-which contains the timestamp for each hourly sample.
+  which contains the timestamp for each hourly sample.
 
 - All features and time arrays are hourly, aligned in time, and aligned on the same spatial grid. 
 
@@ -70,7 +70,7 @@ which contains the timestamp for each hourly sample.
 ```
 lat_long.npy
 ```
-which spans for the (140,124) spatial grid of the samples stating the latitude and longitude of each grid point.
+  which spans for the (140,124) spatial grid of the samples stating the latitude and longitude of each grid point.
 
 ## 3.2 Constructing Training Samples
 
