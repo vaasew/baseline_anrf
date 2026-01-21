@@ -50,21 +50,27 @@ The dataset consists of **hourly gridded fields over India**, aligned on the sam
 
 ## 3.1 Raw Data Format
 
-Each feature is stored independently for each month as a NumPy array:
+- Each feature is stored independently for each month as a NumPy array:
 ```
 APRIL_16_HOURLY_pm25.npy  
 APRIL_16_HOURLY_t2.npy  
 APRIL_16_HOURLY_rainc.npy  
 <Month>_<YY>_HOURLY_<feature_name>.npy  
 ```
-Each month also includes:
+- Each month also includes:
 ```
 APRIL_16_HOURLY_times.npy
 <Month>_<YY>_HOURLY_times.npy  
 ```
 which contains the timestamp for each hourly sample.
 
-All features and time arrays are hourly, aligned in time, and aligned on the same spatial grid. Latitude and longitude grids are provided separately.
+- All features and time arrays are hourly, aligned in time, and aligned on the same spatial grid. 
+
+- Latitude and longitude grids are provided separately in:
+```
+lat_long.npy
+```
+which spans for the (140,124) spatial grid of the samples stating the latitude and longitude of each grid point.
 
 ## 3.2 Constructing Training Samples
 
