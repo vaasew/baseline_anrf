@@ -20,9 +20,9 @@ PM2.5 enters the atmosphere through:
 
 Once emitted, PM is strongly influenced by **meteorology** through transport, vertical mixing, chemical transformation, and wet deposition.
 
-The ability to forecast PM2.5 concentrations enables early warnings, public-health protection, and policy planning. Surrogate AI models for chemical transport simulations can drastically reduce inference time while retaining physical relevance.
+- The ability to forecast PM2.5 concentrations enables early warnings, public-health protection, and policy planning. Surrogate AI models for chemical transport simulations can drastically reduce inference time while retaining physical relevance.
 
-The goal of this competition is to forecast **future PM2.5 concentration fields** given multi-source spatio-temporal inputs.
+- The goal of this competition is to forecast **future PM2.5 concentration fields** given multi-source spatio-temporal inputs.
 
 ---
 
@@ -50,31 +50,38 @@ The dataset consists of **hourly gridded fields over India**, aligned on the sam
 
 ## 3.1 Raw Data Format
 
-Each feature is stored independently for each month as a NumPy array:
-
+- Each feature is stored independently for each month as a NumPy array:
+```
 APRIL_16_HOURLY_pm25.npy  
 APRIL_16_HOURLY_t2.npy  
 APRIL_16_HOURLY_rainc.npy  
-APRIL_16_HOURLY_<feature_name>.npy  
+<Month>_<YY>_HOURLY_<feature_name>.npy  
+```
+- Each month also includes:
+```
+APRIL_16_HOURLY_times.npy
+<Month>_<YY>_HOURLY_times.npy  
+```
+  which contains the timestamp for each hourly sample.
 
-Each month also includes:
+- All features and time arrays are hourly, aligned in time, and aligned on the same spatial grid. 
 
-APRIL_16_HOURLY_times.npy  
-
-which contains the timestamp for each hourly sample.
-
-All features and time arrays are hourly, aligned in time, and aligned on the same spatial grid. Latitude and longitude grids are provided separately.
+- Latitude and longitude grids are provided separately in:
+```
+lat_long.npy
+```
+  which spans for the (140,124) spatial grid of the samples stating the latitude and longitude of each grid point.
 
 ## 3.2 Constructing Training Samples
 
 Participants are expected to construct their own **training and validation time-series samples** from the raw hourly arrays.
 
 A reference pipeline is provided:
-
+```
 prepare_dataset.py  
 prepare_dataset.yaml  
-
-This demonstrates discarding spin-up hours, building sliding windows, generating train/validation splits, and saving time-series tensors for model training.
+```
+This demonstrates discarding spin-up hours, building sliding windows, generating train/validation splits, and saving time-series samples for model training.
 
 ---
 
@@ -82,13 +89,13 @@ This demonstrates discarding spin-up hours, building sliding windows, generating
 
 The dataset provides three broad input groups:
 
-1. **Air quality variable (PM2.5)**  
+1. **PM2.5 concentrations**  
 2. **Meteorological variables**  
 3. **Emission variables**
 
 All features are optional. Participants may use any subset or engineered combinations.
 
-## 4.1 Air Quality Variable
+## 4.1 PM2.5 concentrations
 
 | Feature | Description |
 |--------|-------------|
@@ -104,13 +111,13 @@ These variables control transport, chemistry, dilution, and wet removal.
 
 | Feature  | Description                                                            |
 | -------- | ---------------------------------------------------------------------- |
-| `q2`     | 2-m specific humidity (kg/kg). Influences secondary aerosol formation. |
-| `t2`     | 2-m air temperature (K). Governs thermodynamics and reaction rates.    |
+| `q2`     | 2-m specific humidity (kg/kg).                                         |
+| `t2`     | 2-m air temperature (K).                                               |
 | `u10`    | 10-m zonal wind (m/s). Controls horizontal transport.                  |
-| `v10`    | 10-m meridional wind (m/s). Controls horizontal transport.             |
+| `v10`    | 10-m meridional wind (m/s). Controls vertical transport.               |
 | `swdown` | Downward shortwave radiation (W/m²). Proxy for photochemical activity. |
 | `pblh`   | Planetary boundary layer height (m). Governs vertical mixing.          |
-| `psfc`   | Surface pressure (Pa). Reflects synoptic-scale circulation.            |
+| `psfc`   | Surface pressure (Pa).                                                 |
 | `rainc`  | Accumulated convective precipitation (mm).                             |
 | `rainnc` | Accumulated non-convective precipitation (mm).                         |
 
@@ -120,7 +127,7 @@ Recommended: rain = rainc + rainnc
 
 ## 4.3 Emission Variables
 
-This section describes the emission-related inputs provided in the dataset. These variables represent **surface emission fluxes** that directly control the formation and variability of PM2.5 through primary release and secondary chemical pathways.
+This section describes the emission-related inputs provided in the dataset.
 
 The emission inventory is split into two major source categories:
 
@@ -162,7 +169,7 @@ The emission inventory is split into two major source categories:
 
 ### Recommended emission construction
 
-For most modeling setups, it is recommended to aggregate anthropogenic and biomass burning sources into unified chemical drivers:
+- For most modeling setups, it is recommended to aggregate anthropogenic and biomass burning sources into unified chemical drivers:
 
 ```
 PM25 = PM25_e + PM25_finn
@@ -172,12 +179,12 @@ NOx = NOx_e + NOx_finn
 ```
 
 
-NMVOC emissions are recommended to be **kept separate** (`NMVOC_e`, `NMVOC_finn`) to allow the model to distinguish between anthropogenic and fire-driven chemical regimes.
+- NMVOC emissions are recommended to be **kept separate** (`NMVOC_e`, `NMVOC_finn`) to allow the model to distinguish between anthropogenic and fire-driven chemical regimes.
 
-Biogenic isoprene (`bio`) is provided independently and should be treated as a separate natural emission driver.
+- Biogenic isoprene (`bio`) is provided independently and should be treated as a separate natural emission driver.
 
 
-Emission variables are **major controls on PM2.5 formation and variability**, governing both direct particulate release and secondary aerosol production. Incorporating these features is strongly recommended.
+- Emission variables are **major controls on PM2.5 formation and variability**, governing both direct particulate release and secondary aerosol production. Incorporating these features is strongly recommended.
 
 
 # 5. Training Data
@@ -190,6 +197,8 @@ October 2016
 December 2016  
 
 Only this data may be used for training and validation.
+
+### Some things to remember 
 
 - Raw data is hourly  
 - First 48 hours of each month should be discarded(spin-up time)  
@@ -206,8 +215,8 @@ notebooks/dataset_helper.ipynb
 
 This section explains how evaluation is conducted.
 
--Evaluation is performed on certain months of **2017** WRF Chem Simulation data. 
--Two test sets(with all features) are released in **input-only form**.
+- Evaluation is performed on certain months of **2017** WRF Chem Simulation data. 
+- Two test sets(with all features) are released in **input-only form**.
 
 ## Test Set 1 (Public)
 
