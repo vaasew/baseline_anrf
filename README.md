@@ -127,7 +127,7 @@ Recommended: rain = rainc + rainnc
 
 ## 4.3 Emission Variables
 
-This section describes the emission-related inputs provided in the dataset. These variables represent **surface emission fluxes** that directly control the formation and variability of PM2.5 through primary release and secondary chemical pathways.
+This section describes the emission-related inputs provided in the dataset.
 
 The emission inventory is split into two major source categories:
 
@@ -169,7 +169,7 @@ The emission inventory is split into two major source categories:
 
 ### Recommended emission construction
 
-For most modeling setups, it is recommended to aggregate anthropogenic and biomass burning sources into unified chemical drivers:
+- For most modeling setups, it is recommended to aggregate anthropogenic and biomass burning sources into unified chemical drivers:
 
 ```
 PM25 = PM25_e + PM25_finn
@@ -179,12 +179,12 @@ NOx = NOx_e + NOx_finn
 ```
 
 
-NMVOC emissions are recommended to be **kept separate** (`NMVOC_e`, `NMVOC_finn`) to allow the model to distinguish between anthropogenic and fire-driven chemical regimes.
+- NMVOC emissions are recommended to be **kept separate** (`NMVOC_e`, `NMVOC_finn`) to allow the model to distinguish between anthropogenic and fire-driven chemical regimes.
 
-Biogenic isoprene (`bio`) is provided independently and should be treated as a separate natural emission driver.
+- Biogenic isoprene (`bio`) is provided independently and should be treated as a separate natural emission driver.
 
 
-Emission variables are **major controls on PM2.5 formation and variability**, governing both direct particulate release and secondary aerosol production. Incorporating these features is strongly recommended.
+- Emission variables are **major controls on PM2.5 formation and variability**, governing both direct particulate release and secondary aerosol production. Incorporating these features is strongly recommended.
 
 
 # 5. Training Data
@@ -197,6 +197,8 @@ October 2016
 December 2016  
 
 Only this data may be used for training and validation.
+
+### Some things to remember 
 
 - Raw data is hourly  
 - First 48 hours of each month should be discarded(spin-up time)  
