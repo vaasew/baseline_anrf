@@ -20,9 +20,9 @@ PM2.5 enters the atmosphere through:
 
 Once emitted, PM is strongly influenced by **meteorology** through transport, vertical mixing, chemical transformation, and wet deposition.
 
-The ability to forecast PM2.5 concentrations enables early warnings, public-health protection, and policy planning. Surrogate AI models for chemical transport simulations can drastically reduce inference time while retaining physical relevance.
+- The ability to forecast PM2.5 concentrations enables early warnings, public-health protection, and policy planning. Surrogate AI models for chemical transport simulations can drastically reduce inference time while retaining physical relevance.
 
-The goal of this competition is to forecast **future PM2.5 concentration fields** given multi-source spatio-temporal inputs.
+- The goal of this competition is to forecast **future PM2.5 concentration fields** given multi-source spatio-temporal inputs.
 
 ---
 
@@ -215,8 +215,8 @@ notebooks/dataset_helper.ipynb
 
 This section explains how evaluation is conducted.
 
--Evaluation is performed on certain months of **2017** WRF Chem Simulation data. 
--Two test sets(with all features) are released in **input-only form**.
+- Evaluation is performed on certain months of **2017** WRF Chem Simulation data. 
+- Two test sets(with all features) are released in **input-only form**.
 
 ## Test Set 1 (Public)
 
