@@ -1,299 +1,310 @@
-# Country Level PM 2.5 Concentration Forecasting
+# Country-Level PM2.5 Concentration Forecasting
 
-This repository provides the official **baseline code structure, data pipeline, and evaluation interface** for the Air Quality Forecasting Competition.
+This repository provides the official **baseline code structure, raw dataset format, data pipeline, and evaluation interface** for the Air Quality Forecasting Competition.
 
-Participants are expected to build upon this repository to develop their own models while preserving the overall project structure and inference interface.
+Participants are expected to build upon this repository to develop their own models while **preserving the overall project structure and inference interface.**
 
----
-
-# 📌 Problem Overview
-
-Particulate Matter (PM) concentration is a major cause of concern in India with regards to
-public health since its levels can exceed the Indian standards by more than 10 times. PM 2.5 are fine particles that possess the ability to penetrate deep into the lungs and cause several health problems, including stroke, ischemic heart disease and Chronic Obstructive Pulmonary Disease (COPD). PM can enter the atmosphere by direct emission such as combustion
-processes, dust storms or through chemical reactions such as Sulphur Dioxide forming the
-sulphate particles. 
-
-This PM mass can then undergo transport or deposition depending upon
-the meteorology of the region.
-The ability to forecast PM 2.5 concentrations can protect the health of the citizens from the elevated levels. Developing a surrogate model for numerical air pollution model can
-drastically reduce the time required to generate forecasts, provide quick insights and plan
-intervention strategies.
+The objective of the competition is to design scientific machine learning models that can accurately forecast short-term **PM2.5 concentration fields over India**.
 
 ---
 
-# Core AI Tasks 
+# 1. Problem Overview
 
-The participants can choose one of the following tasks to model PM concentration over India: 
+This section introduces the scientific motivation and forecasting objective.
 
-a. Neural Operator models \
-b. Physics-Informed models \
-c. Fine-tuning existing weather models such as Aurora, ClimaX 
+Particulate Matter (PM2.5) is a major public-health concern in India, where concentrations frequently exceed national standards by more than an order of magnitude. PM2.5 particles penetrate deep into the lungs and are linked to serious diseases including stroke, ischemic heart disease, and Chronic Obstructive Pulmonary Disease (COPD).
 
-\
-Models post-2020 would be given preference (example operator learning).
-The relevant features which have been frequently used to model PM 2.5 concentration in the
-literature have been provided. The participants can develop a model which can take any
-combination of these features to output future PM 2.5 concentration, either one at a time or
-multi-step output.
+PM2.5 enters the atmosphere through:
+- **Direct emissions** (combustion, dust storms, biomass burning)
+- **Secondary chemical formation** (e.g., SO₂ forming sulfate aerosols)
 
+Once emitted, PM is strongly influenced by **meteorology** through transport, vertical mixing, chemical transformation, and wet deposition.
 
-# 🧩 Available Input Features
+The ability to forecast PM2.5 concentrations enables early warnings, public-health protection, and policy planning. Surrogate AI models for chemical transport simulations can drastically reduce inference time while retaining physical relevance.
 
-The dataset provides two groups of features. **All are optional.**
-
-Participants may use any subset by editing the lists in `train.yaml` and `infer.yaml`.
+The goal of this competition is to forecast **future PM2.5 concentration fields** given multi-source spatio-temporal inputs.
 
 ---
 
-## 🌦 Meteorological Variables (`met_variables`)
+# 2. Core AI Tasks
 
-```
-['pm25','q2','t2','u10','swdown','pblh','v10','psfc','rain']
-```
+This section clarifies the modeling directions encouraged in the competition.
 
-* `pm25`   – PM2.5 concentration
-* `q2`     – 2 m specific humidity
-* `t2`     – 2 m temperature
-* `u10`    – 10 m zonal wind
-* `v10`    – 10 m meridional wind
-* `swdown` – downward shortwave radiation
-* `pblh`   – planetary boundary layer height
-* `psfc`   – surface pressure
-* `rain`   – combined convective + non-convective rainfall
+Participants may adopt any modeling paradigm. However, emphasis is placed on modern scientific ML approaches, including:
 
-> Rain is internally constructed from `rainc` and `rainnc`.
+- **Neural operator models** (FNO, AFNO, UNO, GNO, etc.)
+- **Physics-informed or physics-guided models**
+- **Fine-tuning large pretrained Earth-system models** (Aurora, ClimaX, foundation weather models, operator learners)
+
+Models post-2020 are preferred, particularly operator-learning approaches.
+
+Models may be single-step or multi-step, autoregressive or direct multi-horizon, deterministic or probabilistic, purely data-driven or physics-augmented.
 
 ---
 
-## 🏭 Emission Variables (`emission_variables`)
+# 3. Dataset Overview and Organization
 
-Each emission input consists of **two components that are summed before normalization**.
+This section explains what data is provided and how it is structured.
 
-```
-[
-  ['PM25_e','PM25_finn'],
-  ['NH3_e','NH3_finn'],
-  ['SO2_e','SO2_finn'],
-  ['NOx_e','NOx_finn']
-]
-```
+The dataset consists of **hourly gridded fields over India**, aligned on the same spatial grid and timestamps. The data is provided as **raw feature arrays**, not pre-constructed ML samples.
 
-```
-['NMVOC_e','NMVOC_finn','bio']
-```
+## 3.1 Raw Data Format
 
-The emission files consist of combined emissions of PM 2.5 , NOx, SO2, NH3 from biomass
-burning and anthropogenic emissions. The emissions of NMVOCs are kept separate for the
-two sources. Biogenic emissions of isoprene are also provided. Every month has its own file
-with the timestamps provided for each file. To avoid spin-off time, we suggest clipping the
-first 48 hours of data from each month’s files. Two other files provide the latitude and
-longitude configuration of these files.
+Each feature is stored independently for each month as a NumPy array:
 
----
+APRIL_16_HOURLY_pm25.npy  
+APRIL_16_HOURLY_t2.npy  
+APRIL_16_HOURLY_rainc.npy  
+APRIL_16_HOURLY_<feature_name>.npy  
 
-##  Training Data
+Each month also includes:
 
-Hourly data for each feature is provided for the following months in **2016**:
+APRIL_16_HOURLY_times.npy  
 
-* April 2016
-* July 2016
-* October 2016
-* December 2016
+which contains the timestamp for each hourly sample.
 
----
+All features and time arrays are hourly, aligned in time, and aligned on the same spatial grid. Latitude and longitude grids are provided separately.
 
-## Test Data
+## 3.2 Constructing Training Samples
 
-Evaluation will be performed on **data from multiple months from 2017**.
+Participants are expected to construct their own **training and validation time-series samples** from the raw hourly arrays.
 
-There are **two test sets**:
+A reference pipeline is provided:
 
-### 🔓 Test Set 1
+prepare_dataset.py  
+prepare_dataset.yaml  
 
-* Participants can see their evaluation scores on this test set.
-* Feeds into a **public leaderboard**
-* Leaderboard updates once every 1–2 days
-
-### 🔒 Test Set 2
-
-* Completely private and never accessible during the competition
-* Final rankings are based **only** on this set
-* Dataset and results will be released **after the competition ends**
+This demonstrates discarding spin-up hours, building sliding windows, generating train/validation splits, and saving time-series tensors for model training.
 
 ---
 
-# Repository Structure
+# 4. Input Features
 
-Participants must preserve the repository structure:
+The dataset provides three broad input groups:
 
-```
-configs/
-data/
-experiments/
-scripts/
-src/
-```
+1. **Air quality variable (PM2.5)**  
+2. **Meteorological variables**  
+3. **Emission variables**
 
-Your implementation may modify or extend internal files, but **the inference entrypoint must remain compatible.**
+All features are optional. Participants may use any subset or engineered combinations.
 
----
+## 4.1 Air Quality Variable
+
+| Feature | Description |
+|--------|-------------|
+| pm25 | Surface PM2.5 concentration (µg/m³). Used both as an input context variable and the forecast target. |
+
+This is the only prediction target.
+
+## 4.2 Meteorological Variables
+
+met_variables = ['q2','t2','u10','v10','swdown','pblh','psfc','rainc','rainnc']
+
+These variables control transport, chemistry, dilution, and wet removal.
+
+| Feature  | Description                                                            |
+| -------- | ---------------------------------------------------------------------- |
+| `q2`     | 2-m specific humidity (kg/kg). Influences secondary aerosol formation. |
+| `t2`     | 2-m air temperature (K). Governs thermodynamics and reaction rates.    |
+| `u10`    | 10-m zonal wind (m/s). Controls horizontal transport.                  |
+| `v10`    | 10-m meridional wind (m/s). Controls horizontal transport.             |
+| `swdown` | Downward shortwave radiation (W/m²). Proxy for photochemical activity. |
+| `pblh`   | Planetary boundary layer height (m). Governs vertical mixing.          |
+| `psfc`   | Surface pressure (Pa). Reflects synoptic-scale circulation.            |
+| `rainc`  | Accumulated convective precipitation (mm).                             |
+| `rainnc` | Accumulated non-convective precipitation (mm).                         |
 
 
+Recommended: rain = rainc + rainnc
 
-# Feature Set, Data Interface, and Evaluation Rules
 
-This section describes the available input features, how feature selection is controlled, how preprocessing may be modified, how test data is formatted, and how inference is performed during official evaluation.
+## 4.3 Emission Variables
 
----
+This section describes the emission-related inputs provided in the dataset. These variables represent **surface emission fluxes** that directly control the formation and variability of PM2.5 through primary release and secondary chemical pathways.
 
-## Feature Selection and Control
+The emission inventory is split into two major source categories:
 
-Participants are free to keep, drop, or reorder features by editing only the following fields in both `train.yaml` and `infer.yaml`:
+- **EDGAR-based anthropogenic emissions (`*_e`)**  
+  Derived from the *Emissions Database for Global Atmospheric Research (EDGAR)*, these represent emissions from human activities such as transportation, industry, power generation, residential combustion, and agriculture.
 
-```
-features:
-  V: 16  
-  met_variables: [...]  
-  emission_variables: [...]  
-  single_variables: [...] 
-```
-`V refers to number of features`
+- **FINN-based biomass burning emissions (`*_finn`)**  
+  Derived from the *Fire INventory from NCAR (FINN)*, these represent emissions from open biomass burning, including forest fires, crop residue burning, and grassland fires.
 
-The default data loader is fully driven by these lists. Removing any feature from these lists automatically removes it from the model input. No other data-loading code changes are required.
-
----
-
-## Preprocessing and Normalization
-
-The baseline code uses per-feature min-max normalization based on:
-
-data/stats/min_max.mat
-
-Participants are completely free to change normalization or standardization, apply custom preprocessing, add feature engineering, or use learned or statistical scaling. The only requirement is that your `infer.py` must correctly load and preprocess the official test data format.
-
----
-
-## Test Data Format
-
-All test datasets will always be distributed such that each feature is stored in a separate NumPy file. Meteorological variables are stored in `savepath_met` and emission variables are stored in `savepath_emissions`.
-
-File naming format:
-
-<dataset_name>_<feature_name>.npy
-
-Example:
-
-val_pm25.npy  
-val_q2.npy  
-val_PM25_e.npy  
-val_PM25_finn.npy  
-
-The dataset_name is controlled from:
-
-data:
-  dataset: val
-
-in `infer.yaml`.
-
-During official evaluation, only this field will be changed (for example: `test1`, `test2`). Your inference pipeline must rely on this naming convention.
 
 ---
 
-## Inference Interface and Evaluation
+### Emission components provided
 
-During evaluation, the organizers will modify only the following fields in `infer.yaml`:
-```
-paths:
-  savepath_emissions: data/emissions/  
-  savepath_met: data/met/  
-  output_file: experiments/baseline/eval/preds.npy  
+**Primary PM2.5**
+- `PM25_e`    – Anthropogenic primary PM2.5 emissions (EDGAR)  
+- `PM25_finn` – Biomass burning primary PM2.5 emissions (FINN)
 
-data:
-  dataset: val  
-  ntest: 528  
-  total_time: 26  
-  time_input: 10  
-  time_out: 16  
+**Ammonia (NH₃)**
+- `NH3_e`     – Anthropogenic ammonia emissions (EDGAR; agriculture, livestock, waste, industry)  
+- `NH3_finn`  – Biomass burning ammonia emissions (FINN)
+
+**Sulfur dioxide (SO₂)**
+- `SO2_e`     – Anthropogenic sulfur dioxide emissions (EDGAR; power plants, refineries, industry)  
+- `SO2_finn`  – Biomass burning sulfur dioxide emissions (FINN)
+
+**Nitrogen oxides (NOₓ)**
+- `NOx_e`     – Anthropogenic nitrogen oxides emissions (EDGAR; transport, combustion, industry)  
+- `NOx_finn`  – Biomass burning nitrogen oxides emissions (FINN)
+
+**Non-methane volatile organic compounds (NMVOCs)**
+- `NMVOC_e`    – Anthropogenic NMVOCs (EDGAR; solvents, fuels, industry)  
+- `NMVOC_finn` – Biomass burning NMVOCs (FINN)
+
+**Biogenic**
+- `bio` – Biogenic isoprene emissions from natural vegetation (provided independently, not from EDGAR or FINN)
+
+---
+
+### Recommended emission construction
+
+For most modeling setups, it is recommended to aggregate anthropogenic and biomass burning sources into unified chemical drivers:
+
+```
+PM25 = PM25_e + PM25_finn
+NH3 = NH3_e + NH3_finn
+SO2 = SO2_e + SO2_finn
+NOx = NOx_e + NOx_finn
 ```
 
-Your `infer.py` must generate a NumPy file:
 
-```
-(output_file).npy
-```
+NMVOC emissions are recommended to be **kept separate** (`NMVOC_e`, `NMVOC_finn`) to allow the model to distinguish between anthropogenic and fire-driven chemical regimes.
+
+Biogenic isoprene (`bio`) is provided independently and should be treated as a separate natural emission driver.
+
+
+Emission variables are **major controls on PM2.5 formation and variability**, governing both direct particulate release and secondary aerosol production. Incorporating these features is strongly recommended.
+
+
+# 5. Training Data
+
+Training data is provided from 2016 WRF-Chem Simulation Data for the months:
+
+April 2016  
+July 2016  
+October 2016  
+December 2016  
+
+Only this data may be used for training and validation.
+
+- Raw data is hourly  
+- First 48 hours of each month should be discarded(spin-up time)  
+- All features share a common grid or spatial distribution of shape (140,124)
+- Lazy loading is recommended  
+
+Dataset helper notebook:
+
+notebooks/dataset_helper.ipynb
+
+---
+
+# 6. Test Sets and Evaluation Protocol
+
+This section explains how evaluation is conducted.
+
+-Evaluation is performed on certain months of **2017** WRF Chem Simulation data. 
+-Two test sets(with all features) are released in **input-only form**.
+
+## Test Set 1 (Public)
+
+- Inputs are released  
+- Participants upload predictions  
+- Evaluation scores are returned  
+- Feeds into a **public leaderboard**  
+- Updates once per day  
+- Submission limit: once daily  
+- Intended as a proxy validation set 
+
+## Test Set 2 (Final)
+
+- Inputs are released  
+- Participants upload predictions  
+- **No evaluation feedback** during the competition  
+- Final rankings computed after the competition ends  
+- Determines official standings 
+
+---
+
+## Anti-Leakage Policy for the Test Sets
+
+- This section explains test-time protection mechanisms against training on the Test Set inputs.
+- Both test sets contain intentionally corrupted samples excluded from evaluation. 
+- Any attempt to train, fine-tune, self-supervise, or adapt on test inputs will propagate corrupted signals and severely degrade performance.(Particularly pertaining to participants training smaller horizon autoregressive models) 
+- Rankings are computed only on a clean undisclosed subset of the corresponding Test Sets.
+
+---
+
+# 7. Submission Format
+
+Participants must submit:
+
+preds.npy
 
 with shape:
 
-```
 (N, H, W, 16)
+
+Each sample has 10 hours of input context. Evaluation is always on 16 future hours.
+
+Evaluation code and pipeline(will give you an idea of how the metrics are computed for the spatial-temporal distribution) can be found in:
+
+```
+src/utils/metrics.py  
+scripts/eval.py  
+configs/eval.yaml  
 ```
 
-where:
+---
 
-* `N` = number of samples
-* `H, W` = spatial dimensions
-* `16` = forecast horizon
+# 8. Baseline Training and Demo Run
 
-This file will be directly passed to the evaluation pipeline.
+## 8.1 Baseline Compute Configuration and Usage
 
-Regardless of your model design (single-step, multi-step, autoregressive, etc.), evaluation is always performed on 16-hour forecasts.
+GPU: NVIDIA A100 (40 GB)  
+Peak GPU reserved: ~3.3 GB  
+Peak GPU allocated: ~2.8 GB  
+CPU: Intel Xeon Platinum 8358  
+Peak RAM: ~82 GB  
+
+Each feature ~4.5 GB. Full training + validation set with runtime tensors ~82 GB.
+
+## 8.2 Baseline Training Details
+
+Total trainable parameters: 0.23M
+Batch size: 4  
+Epochs: 500  
+Loss: time-weighted relative L2 norm
+Average epoch time: ~37 s  
+Total training time: ~5.1 h  
+
+Code:
+
+models/baseline_model.py  
+scripts/train.py  
+configs/train.yaml  
+
+## 8.3 Baseline Results
+
+Baseline benchmark results: (link)
+
+All reported numbers correspond only to the provided baseline implementation as given in the `main` branch of this repository.
+
+
+## 8.4 Running a Small End-to-End Demo
+
+If you would like to run a **lightweight demonstration of the complete pipeline** — covering dataset preparation, model training, inference, and evaluation — using the **same architecture as the baseline**, but trained on a **smaller subset of data and fewer epochs**, please refer to: `run_demo.md`.
+
+
+# 9. Helper Notebooks
+
+``notebooks/training_tips.ipynb``
+
+* Some generic(maybe not so generic) training tips.
+
 
 
 ---
-
-## Submission Requirement
-
-Participants must submit their full project directory in the same structure as this repository. The following must be synchronized with your best model:
-
-- infer.py  
-- infer.yaml  
-- model definitions  
-- preprocessing pipeline  
-
-During evaluation, organizers will replace only dataset-related paths and sizes in `infer.yaml` and then directly execute:
-
-python scripts/infer.py
-
-All predictions will be generated exclusively through this interface.
-
----
-
-## Important Notes
-
-* Test sets will always contain exactly 10 hours of input and Final evaluation is always on 16-hour predictions. 
-
-* The final results are based solely on the hidden test set which would be made public along with the results after the competition deadline.
-
-* You may restructure internal modules freely, the only strict contract is:
-
-> `infer.yaml` and `infer.py` must run correctly and produce the required output file.
-
-* Please refer to the FAQ section for data-loading clarifications, testing rules, evaluation policies etc.
-
-
----
-
-Good luck, and we look forward to your solutions.
-
-
-other deliverables and queries from our side -
-
-1. one notebook containing verbose dataset information, sample plotting and viewing of features and some manipulation, training tips will be made and uploaded in notebooks
-
-2. adding a faq section
-
-3. evaluation method and environment compatibility?
-
- the case if we are running infer.py and eval from our side => 
-
-* standardise docker environment - listing libraries and versions allowed + a forum where participants can raise requests to include certain libraries which will be reviewed and decided on inclusion 
-
-or
-
-the case if we only accept uploaded eval results for test sets as numpy files from them=>
-
-* test sets with input time(10 hours) data given to participants and they are asked to upload output.npy files which we will just run an evaluation script on and will report evaluation results and maintain a public leaderboard for test set 1. They can submit at max once a day.
-
-* for test set 2 it will be evaluated and results will be reported after the end of the competition.
-
-* to prevent participants from training their models with the provided input timesteps of test sets, we will include corrupt samples in the test sets and warn the users about the same, as now training with these time steps will spoil their model. During evaluation from our end of the submitted output.npy files we will evaluate only for the proper samples. This should de-incentivize training on these samples.
