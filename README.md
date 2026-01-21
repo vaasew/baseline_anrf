@@ -89,13 +89,13 @@ This demonstrates discarding spin-up hours, building sliding windows, generating
 
 The dataset provides three broad input groups:
 
-1. **Air quality variable (PM2.5)**  
+1. **PM2.5 concentrations**  
 2. **Meteorological variables**  
 3. **Emission variables**
 
 All features are optional. Participants may use any subset or engineered combinations.
 
-## 4.1 Air Quality Variable
+## 4.1 PM2.5 concentrations
 
 | Feature | Description |
 |--------|-------------|
@@ -111,13 +111,13 @@ These variables control transport, chemistry, dilution, and wet removal.
 
 | Feature  | Description                                                            |
 | -------- | ---------------------------------------------------------------------- |
-| `q2`     | 2-m specific humidity (kg/kg). Influences secondary aerosol formation. |
-| `t2`     | 2-m air temperature (K). Governs thermodynamics and reaction rates.    |
+| `q2`     | 2-m specific humidity (kg/kg).                                         |
+| `t2`     | 2-m air temperature (K).                                               |
 | `u10`    | 10-m zonal wind (m/s). Controls horizontal transport.                  |
-| `v10`    | 10-m meridional wind (m/s). Controls horizontal transport.             |
+| `v10`    | 10-m meridional wind (m/s). Controls vertical transport.               |
 | `swdown` | Downward shortwave radiation (W/m²). Proxy for photochemical activity. |
 | `pblh`   | Planetary boundary layer height (m). Governs vertical mixing.          |
-| `psfc`   | Surface pressure (Pa). Reflects synoptic-scale circulation.            |
+| `psfc`   | Surface pressure (Pa).                                                 |
 | `rainc`  | Accumulated convective precipitation (mm).                             |
 | `rainnc` | Accumulated non-convective precipitation (mm).                         |
 
