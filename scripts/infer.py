@@ -21,13 +21,20 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 
+min_max = io.loadmat(cfg.paths.min_max_file)
+
+max_pm = float(min_max["pm25_max"])
+min_pm = float(min_max["pm25_min"])
+
+def denorm(x):
+    # to denormalize the prediction
+    return x * (max_pm - min_pm) + min_pm
+
+
 
 def testing(model, forward_steps, test_loader, model_output_steps, name_file, d, V, time_input,lat=52,long=68):
     prediction = torch.zeros((d, lat, long, forward_steps * model_output_steps))
-    '''
-    Works for cases where output steps are greater than the number of input steps or equal for example 10 input step output 16 pm steps
-    
-    '''
+ 
     index = 0
     model.eval()
     with torch.no_grad():
@@ -35,23 +42,16 @@ def testing(model, forward_steps, test_loader, model_output_steps, name_file, d,
             xx = batch[0].to(device)
             if index%100 == 0:
                 print(index)
-            for k in range(forward_steps):
-                if k == 0:
-                    fp = xx[:, :time_input, :, :, :].reshape(1, time_input, lat, long, V)
-                    im1 = model(fp)
-                    im1 = torch.clamp(im1, min = 1e-6)
-                    pred = im1
-                else:
-                    next_pass_pm = im1.permute(0, 3, 1, 2).unsqueeze(-1)[:, -time_input:, :, :, :]
-                    next_pass_met = xx[:, model_output_steps*k : model_output_steps*k + time_input, :, :, 1:].reshape(1, time_input, lat, long, V-1)
-                    im1 = model(torch.concat((next_pass_pm, next_pass_met), dim = -1))
-                    im1 = torch.clamp(im1, min = 1e-6)
-                    pred = torch.concat((pred, im1), dim = -1)
+            fp = xx[:, :time_input, :, :, :].reshape(1, time_input, lat, long, V)
+            im1 = model(fp)
+            im1 = torch.clamp(im1, min = 1e-6)
+            pred = im1
+
                 
             prediction[index, :, :, :] = pred
             index = index + 1
             
-    np.save(name_file,np.array(prediction.cpu().detach().tolist(),dtype=np.float32))
+    np.save(name_file,denorm(np.array(prediction.cpu().detach().tolist(),dtype=np.float32)))
 
     return None
 
@@ -76,8 +76,8 @@ emission_variables = cfg.features.emission_variables
 single_variables = cfg.features.single_variables
 mean_names = cfg.features.mean_names
 
-savepath_emissions = cfg.paths.savepath_emissions
-savepath_met = cfg.paths.savepath_met
+savepath_emissions = cfg.paths.input_loc_emissions
+savepath_met = cfg.paths.input_loc_met
 
 V = cfg.features.V
 modes = cfg.model.modes
@@ -129,11 +129,9 @@ test = np.zeros((ntest, time_input + time_out, S1, S2, V), dtype = np.float32)
 counter = 0
 
 for met_variable in met_variables:
-    if met_variable=='rain':
-        continue
 
     test_path = os.path.join(savepath_met, f"{dataset}_{met_variable}.npy")
-    data = np.load(test_path, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
+    data = np.load(test_path, mmap_mode = "r")[:, :time_input , :, :].astype(np.float32)
 
     data = normalize_data(
             data,
@@ -148,40 +146,14 @@ for met_variable in met_variables:
     del test_path
 
 
-if 'rain' in met_variables:
- 
-    test_path_rainc = os.path.join(savepath_met, f"{dataset}_rainc.npy")
-    test_path_rainnc = os.path.join(savepath_met, f"{dataset}_rainnc.npy")
-    data1 = np.load(test_path_rainc, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-    data2 = np.load(test_path_rainnc, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-    data = data1 + data2
-    data = normalize_data(
-        data,
-        min_max,
-        key="rain_combined"
-    )
+for variable in emission_variables:
 
-    del data1, data2
-    test[:, :, :, :, counter] = data
-    counter = counter + 1
-    del test_path_rainc, test_path_rainnc, data
-
-
-for variables in emission_variables:
-    pollutant = variables[0].split('_')[0]
-
-
-    test_path_v1 = os.path.join(savepath_emissions, f"{dataset}_{variables[0]}.npy")
-    test_path_v2 = os.path.join(savepath_emissions, f"{dataset}_{variables[1]}.npy")
-    data1 = np.load(test_path_v1, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-    data2 = np.load(test_path_v2, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-    data = data1 + data2
-    del data1, data2
+    data=np.load(os.path.join(savepath_emissions, f"{dataset}_{variable}.npy"), mmap_mode="r")[:, :time_input]
 
     data = normalize_data(
         data,
         min_max,
-        key=pollutant,
+        key=variable,
         clip=True
     )
 
@@ -189,21 +161,6 @@ for variables in emission_variables:
     counter = counter + 1
     del data
 
-for k, met_variable in enumerate(single_variables):
-
-
-    test_path = os.path.join(savepath_emissions, f"{dataset}_{met_variable}.npy")
-    data = np.load(test_path, mmap_mode = "r")[:, :time_input + time_out, :, :].astype(np.float32)
-
-    data = normalize_data(
-    data,
-    min_max,
-    key=mean_names[k]
-    )
-
-    test[:, :, :, :, counter] = data
-    counter = counter + 1
-    del data
 
 if counter != V:
     print("Wrong assignment")
@@ -231,7 +188,6 @@ model.eval()
 os.makedirs(os.path.dirname(cfg.paths.output_loc), exist_ok=True)
 testing(
     model,
-    cfg.inference.forward_steps,
     test_loader,
     cfg.data.time_out,
     os.path.join(cfg.paths.output_loc,f'{dataset}.npy'),

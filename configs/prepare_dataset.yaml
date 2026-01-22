@@ -1,10 +1,12 @@
 paths:
   raw_path: data/raw
-  savepath_met: data/met
-  savepath_emissions: data/emissions
+  train_savepath_met: data/train/met
+  train_savepath_emissions: data/train/emissions
+  val_savepath_met: data/train/met
+  val_savepath_emissions: data/train/emissions
 
 data:
-  months: ["APRIL_16_HOURLY",'JULY_16_HOURLY','OCT_16_HOURLY','DEC_16_HOURLY']
+  months: ["APRIL_16",'JULY_16','OCT_16','DEC_16']
   horizon: 26
   stride: 1
   spin_up: 48
@@ -21,18 +23,13 @@ features:
     - swdown
     - pblh
     - psfc
-    - rainc
-    - rainnc
+    - rain
 
   emission_variables_raw:
-    - PM25_e
-    - PM25_finn
-    - NH3_e
-    - NH3_finn
-    - SO2_e
-    - SO2_finn
-    - NOx_e
-    - NOx_finn
+    - PM25
+    - NH3
+    - SO2
+    - NOx
     - NMVOC_e
     - NMVOC_finn
     - bio

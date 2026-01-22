@@ -2,8 +2,8 @@ experiment:
   name: baseline
 
 paths:
-  savepath_emissions: data/emissions/
-  savepath_met: data/met/
+  input_loc_met: data/test_in/met
+  input_loc_emi: data/test_in/emissions
   checkpoint: experiments/baseline/checkpoints/fno_baseline_ep499.pt
   output_loc: experiments/baseline/infer/
   min_max_file: data/stats/min_max.mat
@@ -21,10 +21,10 @@ features:
   V: 16
   met_variables: ['pm25','q2','t2','u10','swdown','pblh','v10','psfc','rain']
   emission_variables:
-    - ['PM25_e','PM25_finn']
-    - ['NH3_e','NH3_finn']
-    - ['SO2_e','SO2_finn']
-    - ['NOx_e','NOx_finn']
+    - 'PM25'
+    - 'NH3'
+    - 'SO2'
+    - 'NOx'
   single_variables: ['NMVOC_e','NMVOC_finn','bio']
   mean_names: ['NMVOCE','NMVOCfinn','isobio']
 
@@ -32,5 +32,4 @@ model:
   modes: 12
   width: 20
 
-inference:
-  forward_steps: 1
+

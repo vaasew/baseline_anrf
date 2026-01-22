@@ -31,20 +31,21 @@ def train_val_split(samples, val_frac=0.2, seed=0):
 def create_timeseries_samples(
     month,
     feature_list,
-    save_dir,
+    train_save_dir,
+    val_save_dir, 
     val_frac,
     seed,
     horizon,
-    stride,
-    spin_up
+    # stride,
 ):
-    save_path = save_dir
-    os.makedirs(save_path, exist_ok=True)
+    os.makedirs(train_save_dir, exist_ok=True)
+    os.makedirs(val_save_dir, exist_ok=True)
 
     print(f"\n==============================")
     print(f"Month: {month}")
-    print(f"Save path: {save_path}")
-    print(f"Horizon={horizon}, Stride={stride}, Spin-up={spin_up}")
+    print(f"Train Save path: {train_save_dir}")
+    print(f"Val Save path: {val_save_dir}") 
+    print(f"Horizon={horizon}, Stride={stride}")
     print(f"==============================\n")
 
     for feat in tqdm(feature_list):
@@ -55,7 +56,7 @@ def create_timeseries_samples(
         print(f"\nFeature: {feat}")
         print("Original shape:", arr.shape)
 
-        arr = arr[spin_up:]
+        # arr = arr[spin_up:]
         T = arr.shape[0]
         print("After spin-up:", arr.shape)
 
@@ -70,8 +71,8 @@ def create_timeseries_samples(
 
         print("Train:", train_samples.shape[0], "Val:", val_samples.shape[0])
 
-        np.save(os.path.join(save_path, f"train_{feat}.npy"), train_samples)
-        np.save(os.path.join(save_path, f"val_{feat}.npy"), val_samples)
+        np.save(os.path.join(train_save_dir, f"train_{feat}.npy"), train_samples)
+        np.save(os.path.join(val_save_dir, f"val_{feat}.npy"), val_samples)
 
         del arr, samples, train_samples, val_samples
 
@@ -87,21 +88,23 @@ for month in cfg.data.months:
     create_timeseries_samples(
         month=month,
         feature_list=cfg.features.met_variables_raw,
-        save_dir=cfg.paths.savepath_met,
+        train_save_dir=cfg.paths.train_savepath_met,
+        val_save_dir=cfg.paths.val_savepath_met,
         val_frac=cfg.data.val_frac,
         seed=cfg.data.seed,
         horizon=cfg.data.horizon,
         stride=cfg.data.stride,
-        spin_up=cfg.data.spin_up
+        # spin_up=cfg.data.spin_up
     )
 
     create_timeseries_samples(
         month=month,
         feature_list=cfg.features.emission_variables_raw,
-        save_dir=cfg.paths.savepath_emissions,
+        train_save_dir=cfg.paths.train_savepath_emi,
+        val_save_dir=cfg.paths.val_savepath_emi,
         val_frac=cfg.data.val_frac,
         seed=cfg.data.seed,
         horizon=cfg.data.horizon,
         stride=cfg.data.stride,
-        spin_up=cfg.data.spin_up
+        # spin_up=cfg.data.spin_up
     )

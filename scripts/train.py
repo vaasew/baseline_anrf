@@ -109,8 +109,7 @@ counter = 0
 # -------------------------------
 
 for met_variable in met_variables:
-    if met_variable == "rain":
-        continue
+ 
 
     train_path = os.path.join(savepath_met, f"train_{met_variable}.npy")
     val_path   = os.path.join(savepath_met, f"val_{met_variable}.npy")
@@ -134,51 +133,18 @@ for met_variable in met_variables:
     del train_data, val_data
 
 
-# -------------------------------
-# Rain (combined)
-# -------------------------------
-
-if "rain" in met_variables:
-
-    train_rain = (
-        np.load(os.path.join(savepath_met, "train_rainc.npy"),  mmap_mode="r")[:, :time_input + time_out] +
-        np.load(os.path.join(savepath_met, "train_rainnc.npy"), mmap_mode="r")[:, :time_input + time_out]
-    )
-
-    val_rain = (
-        np.load(os.path.join(savepath_met, "val_rainc.npy"),  mmap_mode="r")[:, :time_input + time_out] +
-        np.load(os.path.join(savepath_met, "val_rainnc.npy"), mmap_mode="r")[:, :time_input + time_out]
-    )
-
-    train_rain = normalize_data(train_rain, min_max, "rain_combined")
-    val_rain   = normalize_data(val_rain,   min_max, "rain_combined")
-
-    total[..., counter] = train_rain
-    test[...,  counter] = val_rain
-    counter += 1
-
-    del train_rain, val_rain
-
 
 # -------------------------------
 # Emission variables
 # -------------------------------
 
-for variables in emission_variables:
-    pollutant = variables[0].split("_")[0]
+for variable in emission_variables:
 
-    train_data = (
-        np.load(os.path.join(savepath_emissions, f"train_{variables[0]}.npy"), mmap_mode="r")[:, :time_input + time_out] +
-        np.load(os.path.join(savepath_emissions, f"train_{variables[1]}.npy"), mmap_mode="r")[:, :time_input + time_out]
-    )
+    train_data = np.load(os.path.join(savepath_emissions, f"train_{variable}.npy"), mmap_mode="r")[:, :time_input + time_out]
+    val_data = np.load(os.path.join(savepath_emissions, f"val_{variable}.npy"), mmap_mode="r")[:, :time_input + time_out]
 
-    val_data = (
-        np.load(os.path.join(savepath_emissions, f"val_{variables[0]}.npy"), mmap_mode="r")[:, :time_input + time_out] +
-        np.load(os.path.join(savepath_emissions, f"val_{variables[1]}.npy"), mmap_mode="r")[:, :time_input + time_out]
-    )
-
-    train_data = normalize_data(train_data, min_max, pollutant, clip=True)
-    val_data   = normalize_data(val_data,   min_max, pollutant, clip=True)
+    train_data = normalize_data(train_data, min_max, variable, clip=True)
+    val_data   = normalize_data(val_data,   min_max, variable, clip=True)
 
     total[..., counter] = train_data
     test[...,  counter] = val_data
@@ -187,26 +153,6 @@ for variables in emission_variables:
     del train_data, val_data
 
 
-# -------------------------------
-# Single variables
-# -------------------------------
-
-for k, met_variable in enumerate(single_variables):
-
-    train_path = os.path.join(savepath_emissions, f"train_{met_variable}.npy")
-    val_path   = os.path.join(savepath_emissions, f"val_{met_variable}.npy")
-
-    train_data = np.load(train_path, mmap_mode="r")[:, :time_input + time_out]
-    val_data   = np.load(val_path,   mmap_mode="r")[:, :time_input + time_out]
-
-    train_data = normalize_data(train_data, min_max, mean_names[k])
-    val_data   = normalize_data(val_data,   min_max, mean_names[k])
-
-    total[..., counter] = train_data
-    test[...,  counter] = val_data
-    counter += 1
-
-    del train_data, val_data
 
 
 # -------------------------------
@@ -235,13 +181,6 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a,
 del test_u, test_a
 
 
-T = cfg.data.time_out
-weights = np.array([math.exp((i+1)/T) for i in range(T)])
-wsum = np.sum(weights)
-weights = weights / wsum
-print(weights)
-w = torch.tensor(weights, dtype=torch.float32, device=device)
-w = w.view(1, 1, 1, T)
 
 
 model = FNO2D(
@@ -274,7 +213,7 @@ scheduler = torch.optim.lr_scheduler.StepLR(
 path1 = cfg.paths.model_save_path
 log_save = cfg.paths.save_dir
 
-myloss = LpLoss_weighted(weights = weights, size_average=False)
+myloss = LpLoss(size_average=False)
 log = []
 
 os.makedirs(os.path.dirname(log_save), exist_ok=True)
