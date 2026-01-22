@@ -52,6 +52,7 @@ def testing(model, forward_steps, test_loader, model_output_steps, name_file, d,
             index = index + 1
             
     np.save(name_file,denorm(np.array(prediction.cpu().detach().tolist(),dtype=np.float32)))
+    
 
     return None
 
