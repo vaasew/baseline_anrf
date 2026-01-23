@@ -52,7 +52,7 @@ def testing(model, forward_steps, test_loader, model_output_steps, name_file, d,
             index = index + 1
             
     np.save(name_file,denorm(np.array(prediction.cpu().detach().tolist(),dtype=np.float32)))
-    
+
 
     return None
 
@@ -74,11 +74,8 @@ long = cfg.data.S2
 
 met_variables = cfg.features.met_variables
 emission_variables = cfg.features.emission_variables
-single_variables = cfg.features.single_variables
-mean_names = cfg.features.mean_names
 
-savepath_emissions = cfg.paths.input_loc_emissions
-savepath_met = cfg.paths.input_loc_met
+savepath = cfg.paths.input_loc
 
 V = cfg.features.V
 modes = cfg.model.modes
@@ -131,7 +128,7 @@ counter = 0
 
 for met_variable in met_variables:
 
-    test_path = os.path.join(savepath_met, f"{dataset}_{met_variable}.npy")
+    test_path = os.path.join(savepath, f"{met_variable}.npy")
     data = np.load(test_path, mmap_mode = "r")[:, :time_input , :, :].astype(np.float32)
 
     data = normalize_data(
@@ -149,7 +146,7 @@ for met_variable in met_variables:
 
 for variable in emission_variables:
 
-    data=np.load(os.path.join(savepath_emissions, f"{dataset}_{variable}.npy"), mmap_mode="r")[:, :time_input]
+    data=np.load(os.path.join(savepath, f"{variable}.npy"), mmap_mode="r")[:, :time_input]
 
     data = normalize_data(
         data,

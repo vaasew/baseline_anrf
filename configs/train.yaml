@@ -2,9 +2,8 @@ experiment:
   exp_name: anrf_fno
 
 paths:
-  savepath_emissions: data/emissions/
-  savepath_met: data/met/
-  min_max_file: data/stats/min_max.mat
+  savepath: data/train/
+  min_max_file: data/stats/feat_min_max.mat
   save_dir: experiments/baseline/logs/log.json
   model_save_path: experiments/baseline/checkpoints/fno_baseline.pt
 

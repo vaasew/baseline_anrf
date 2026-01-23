@@ -1,15 +1,12 @@
 paths:
   raw_path: data/raw
-  train_savepath_met: data/train/met
-  train_savepath_emissions: data/train/emissions
-  val_savepath_met: data/train/met
-  val_savepath_emissions: data/train/emissions
+  train_savepath: data/train/
+  val_savepath: data/val/
 
 data:
   months: ["APRIL_16",'JULY_16','OCT_16','DEC_16']
   horizon: 26
   stride: 1
-  spin_up: 48
   val_frac: 0.2
   seed: 0
 

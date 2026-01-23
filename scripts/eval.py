@@ -25,20 +25,12 @@ cities = cfg.cities
 
 metrics = {
     "rmse": rmse,
-    "smape": smape,
-    "mfb": mfb
+    # "smape": smape,
+    # "mfb": mfb
 }
 
 os.makedirs(save_dir, exist_ok=True)
 
-
-min_max = io.loadmat(cfg.paths.min_max_file)
-
-max_pm = float(min_max["pm25_max"])
-min_pm = float(min_max["pm25_min"])
-
-def denorm(x):
-    return x * (max_pm - min_pm) + min_pm
 
 
 # -----------------------
@@ -47,7 +39,6 @@ def denorm(x):
 
 pred = np.load(pred_path)                 
 pred = pred.astype(np.float32)
-pred = denorm(pred)
 
 
 # -----------------------
@@ -77,37 +68,37 @@ print("Saved domain evaluation.")
 
 # -----------------------
 # City-wise evaluation
-# -----------------------
+# # -----------------------
 
-save_dir = os.path.join(cfg.paths.save_dir, "cities")
-os.makedirs(save_dir, exist_ok=True)
+# save_dir = os.path.join(cfg.paths.save_dir, "cities")
+# os.makedirs(save_dir, exist_ok=True)
 
-T = pred.shape[-1]
+# T = pred.shape[-1]
 
-for city, pts in vars(cities).items():
+# for city, pts in vars(cities).items():
 
-    act_list, pred_list = [], []
+#     act_list, pred_list = [], []
 
-    for (lat, lon) in pts:
-        act_list.append(act[:, lat:lat+1, lon:lon+1, :])
-        pred_list.append(pred[:, lat:lat+1, lon:lon+1, :])
+#     for (lat, lon) in pts:
+#         act_list.append(act[:, lat:lat+1, lon:lon+1, :])
+#         pred_list.append(pred[:, lat:lat+1, lon:lon+1, :])
 
-    city_act = np.mean(np.stack(act_list, axis=0), axis=0)
-    city_pred = np.mean(np.stack(pred_list, axis=0), axis=0)
+#     city_act = np.mean(np.stack(act_list, axis=0), axis=0)
+#     city_pred = np.mean(np.stack(pred_list, axis=0), axis=0)
 
-    rows = []
+#     rows = []
 
-    for t in range(T):
+#     for t in range(T):
 
-        row = {"hour": t+1}
+#         row = {"hour": t+1}
 
-        for name, fn in metrics.items():
-            res = fn(city_act, city_pred)      # (N, T)
-            row[name] = np.nanmean(res[:, t])
+#         for name, fn in metrics.items():
+#             res = fn(city_act, city_pred)      # (N, T)
+#             row[name] = np.nanmean(res[:, t])
 
-        rows.append(row)
+#         rows.append(row)
 
-    df = pd.DataFrame(rows)
-    df.to_csv(os.path.join(save_dir, f"{cfg.data.dataset}_{city}.csv"), index=False)
+#     df = pd.DataFrame(rows)
+#     df.to_csv(os.path.join(save_dir, f"{cfg.data.dataset}_{city}.csv"), index=False)
 
-    print(f"saved {city} results")
+#     print(f"saved {city} results")

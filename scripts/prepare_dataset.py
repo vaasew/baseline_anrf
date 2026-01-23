@@ -36,7 +36,7 @@ def create_timeseries_samples(
     val_frac,
     seed,
     horizon,
-    # stride,
+    stride,
 ):
     os.makedirs(train_save_dir, exist_ok=True)
     os.makedirs(val_save_dir, exist_ok=True)
@@ -88,23 +88,21 @@ for month in cfg.data.months:
     create_timeseries_samples(
         month=month,
         feature_list=cfg.features.met_variables_raw,
-        train_save_dir=cfg.paths.train_savepath_met,
-        val_save_dir=cfg.paths.val_savepath_met,
+        train_save_dir=cfg.paths.train_savepath,
+        val_save_dir=cfg.paths.val_savepath,
         val_frac=cfg.data.val_frac,
         seed=cfg.data.seed,
         horizon=cfg.data.horizon,
         stride=cfg.data.stride,
-        # spin_up=cfg.data.spin_up
     )
 
     create_timeseries_samples(
         month=month,
         feature_list=cfg.features.emission_variables_raw,
-        train_save_dir=cfg.paths.train_savepath_emi,
-        val_save_dir=cfg.paths.val_savepath_emi,
+        train_save_dir=cfg.paths.train_savepath,
+        val_save_dir=cfg.paths.val_savepath,
         val_frac=cfg.data.val_frac,
         seed=cfg.data.seed,
         horizon=cfg.data.horizon,
         stride=cfg.data.stride,
-        # spin_up=cfg.data.spin_up
     )

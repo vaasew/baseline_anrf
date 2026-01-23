@@ -45,11 +45,8 @@ S2 = cfg.data.S2
 
 met_variables = cfg.features.met_variables
 emission_variables = cfg.features.emission_variables
-single_variables = cfg.features.single_variables
-mean_names = cfg.features.mean_names
 
-savepath_emissions = cfg.paths.savepath_emissions
-savepath_met = cfg.paths.savepath_met
+savepath = cfg.paths.savepath
 
 V = cfg.features.V
 modes = cfg.model.modes
@@ -111,8 +108,8 @@ counter = 0
 for met_variable in met_variables:
  
 
-    train_path = os.path.join(savepath_met, f"train_{met_variable}.npy")
-    val_path   = os.path.join(savepath_met, f"val_{met_variable}.npy")
+    train_path = os.path.join(savepath, f"train_{met_variable}.npy")
+    val_path   = os.path.join(savepath, f"val_{met_variable}.npy")
 
     train_data = np.load(train_path, mmap_mode="r")[:, :time_input + time_out]
     val_data   = np.load(val_path,   mmap_mode="r")[:, :time_input + time_out]
@@ -140,8 +137,8 @@ for met_variable in met_variables:
 
 for variable in emission_variables:
 
-    train_data = np.load(os.path.join(savepath_emissions, f"train_{variable}.npy"), mmap_mode="r")[:, :time_input + time_out]
-    val_data = np.load(os.path.join(savepath_emissions, f"val_{variable}.npy"), mmap_mode="r")[:, :time_input + time_out]
+    train_data = np.load(os.path.join(savepath, f"train_{variable}.npy"), mmap_mode="r")[:, :time_input + time_out]
+    val_data = np.load(os.path.join(savepath, f"val_{variable}.npy"), mmap_mode="r")[:, :time_input + time_out]
 
     train_data = normalize_data(train_data, min_max, variable, clip=True)
     val_data   = normalize_data(val_data,   min_max, variable, clip=True)

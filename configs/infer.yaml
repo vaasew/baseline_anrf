@@ -2,11 +2,10 @@ experiment:
   name: baseline
 
 paths:
-  input_loc_met: data/test_in/met
-  input_loc_emi: data/test_in/emissions
+  input_loc: data/val/
   checkpoint: experiments/baseline/checkpoints/fno_baseline_ep499.pt
   output_loc: experiments/baseline/infer/
-  min_max_file: data/stats/min_max.mat
+  min_max_file: data/stats/feat_min_max.mat
 
 data:
   dataset: val     
