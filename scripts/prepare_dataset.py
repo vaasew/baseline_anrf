@@ -2,7 +2,6 @@ import os
 import sys
 import numpy as np
 from tqdm import tqdm
-#sys.path.append("/home/civil/phd/cez228416/scratch/baseline_anrf/")
 
 from src.utils.config import load_config
 from collections import defaultdict
@@ -43,8 +42,6 @@ def create_timeseries_samples(
 ):
     train_data = {}
     val_data = {}
-    #os.makedirs(train_save_dir, exist_ok=True)
-    #os.makedirs(val_save_dir, exist_ok=True)
 
     print(f"\n==============================")
     print(f"Month: {month}")
