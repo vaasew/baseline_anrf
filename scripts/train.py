@@ -44,7 +44,8 @@ all_features = met_variables + emission_variables
 batch_size = cfg.training.batch_size
 epochs     = cfg.training.epochs
 
-savepath = cfg.paths.savepath
+savepath_train = cfg.paths.savepath_train
+savepath_val   = cfg.paths.savepath_val
 
 # -------------------------------
 # Load min-max statistics
@@ -58,7 +59,7 @@ min_max = io.loadmat(cfg.paths.min_max_file)
 
 class DataLoaders(torch.utils.data.Dataset):
 
-    def __init__(self, split, cfg, min_max):
+    def __init__(self, split, cfg, min_max, savepath_train, savepath_val):
 
         self.time_input = cfg.data.time_input
         self.time_out   = cfg.data.time_out
@@ -73,9 +74,16 @@ class DataLoaders(torch.utils.data.Dataset):
 
         self.min_max = min_max
 
+        if split == "train":
+            base_path = savepath_train
+        elif split == "val":
+            base_path = savepath_val
+        else:
+            raise ValueError("split must be 'train' or 'val'")
+
         self.arrs = {}
         for feat in self.all_features:
-            path = os.path.join(cfg.paths.savepath, f"{split}_{feat}.npy")
+            path = os.path.join(base_path, f"{split}_{feat}.npy")
             self.arrs[feat] = np.load(path, mmap_mode="r")
 
         self.N = self.arrs[self.all_features[0]].shape[0]
@@ -110,21 +118,21 @@ class DataLoaders(torch.utils.data.Dataset):
 
         y = self.arrs[self.all_features[0]][idx, self.time_input:self.T]
         y = self._normalize(y, self.all_features[0])
-        y = torch.from_numpy(y).permute(1,2,0)
+        y = torch.from_numpy(y).permute(1, 2, 0)
 
         x = torch.from_numpy(x)
 
         return x, y
 
 
-train_dataset = DataLoaders("train", cfg, min_max)
-test_dataset  = DataLoaders("val",   cfg, min_max)
+train_dataset = DataLoaders("train", cfg, min_max, savepath_train, savepath_val)
+test_dataset  = DataLoaders("val",   cfg, min_max, savepath_train, savepath_val)
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=2,  
+    num_workers=2,
     pin_memory=True
 )
 
@@ -132,7 +140,7 @@ test_loader = torch.utils.data.DataLoader(
     test_dataset,
     batch_size=batch_size,
     shuffle=False,
-    num_workers=2,        
+    num_workers=2,
     pin_memory=True
 )
 

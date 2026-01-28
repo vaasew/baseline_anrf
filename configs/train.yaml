@@ -2,7 +2,8 @@ experiment:
   exp_name: fno_baseline
 
 paths:
-  savepath: /kaggle/temp/data/train/
+  savepath_train: /kaggle/temp/data/train/
+  savepath_val: /kaggle/temp/data/val/
   min_max_file: /kaggle/input/aise-hack-test/data/stats/feat_min_max.mat
   save_dir: /kaggle/working/experiments/baseline/logs/log.json
   model_save_path: /kaggle/working/experiments/baseline/checkpoints/fno_baseline.pt
