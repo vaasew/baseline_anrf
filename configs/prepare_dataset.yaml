@@ -12,7 +12,7 @@ data:
 
 features:
   met_variables_raw:
-    - pm25
+    - cpm25
     - q2
     - t2
     - u10

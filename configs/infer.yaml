@@ -18,7 +18,7 @@ data:
 
 features:
   V: 16
-  met_variables: ['pm25','q2','t2','u10','swdown','pblh','v10','psfc','rain']
+  met_variables: ['cpm25','q2','t2','u10','swdown','pblh','v10','psfc','rain']
   emission_variables:
     - 'PM25'
     - 'NH3'
