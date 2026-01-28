@@ -1,8 +1,11 @@
 import os
+import sys
 import numpy as np
 from tqdm import tqdm
-from src.utils.config import load_config
+#sys.path.append("/home/civil/phd/cez228416/scratch/baseline_anrf/")
 
+from src.utils.config import load_config
+from collections import defaultdict
 # -----------------------
 # Load config
 # -----------------------
@@ -38,8 +41,10 @@ def create_timeseries_samples(
     horizon,
     stride,
 ):
-    os.makedirs(train_save_dir, exist_ok=True)
-    os.makedirs(val_save_dir, exist_ok=True)
+    train_data = {}
+    val_data = {}
+    #os.makedirs(train_save_dir, exist_ok=True)
+    #os.makedirs(val_save_dir, exist_ok=True)
 
     print(f"\n==============================")
     print(f"Month: {month}")
@@ -50,7 +55,7 @@ def create_timeseries_samples(
 
     for feat in tqdm(feature_list):
 
-        file_path = os.path.join( RAW_PATH, f"{month}_{feat}.npy")
+        file_path = os.path.join( RAW_PATH, month, f"{feat}.npy")    #change month here if needed
         arr = np.load(file_path)
 
         print(f"\nFeature: {feat}")
@@ -68,41 +73,58 @@ def create_timeseries_samples(
         train_samples, val_samples = train_val_split(
             samples, val_frac=val_frac, seed=seed
         )
+        
+        train_data[feat] = train_samples
+        val_data[feat] = val_samples
 
-        print("Train:", train_samples.shape[0], "Val:", val_samples.shape[0])
+        del arr, samples
 
-        np.save(os.path.join(train_save_dir, f"train_{feat}.npy"), train_samples)
-        np.save(os.path.join(val_save_dir, f"val_{feat}.npy"), val_samples)
-
-        del arr, samples, train_samples, val_samples
-
-    print("\nAll features processed.")
+    return train_data, val_data
 
 
 # -----------------------
 # Run
 # -----------------------
+train_buffer = defaultdict(list)
+val_buffer = defaultdict(list)
 
 for month in cfg.data.months:
 
-    create_timeseries_samples(
+    train_m, val_m = create_timeseries_samples(
         month=month,
-        feature_list=cfg.features.met_variables_raw,
+        feature_list=(cfg.features.met_variables_raw + cfg.features.emission_variables_raw),
         train_save_dir=cfg.paths.train_savepath,
         val_save_dir=cfg.paths.val_savepath,
         val_frac=cfg.data.val_frac,
         seed=cfg.data.seed,
         horizon=cfg.data.horizon,
         stride=cfg.data.stride,
+    )
+    for feat in train_m:
+        train_buffer[feat].append(train_m[feat])
+        val_buffer[feat].append(val_m[feat])
+
+os.makedirs(cfg.paths.train_savepath, exist_ok=True)
+os.makedirs(cfg.paths.val_savepath, exist_ok=True)
+
+for feat in train_buffer:
+
+    train_merged = np.concatenate(train_buffer[feat], axis=0)
+    val_merged   = np.concatenate(val_buffer[feat], axis=0)
+
+    print(
+        feat,
+        "Train:", train_merged.shape,
+        "Val:", val_merged.shape
     )
 
-    create_timeseries_samples(
-        month=month,
-        feature_list=cfg.features.emission_variables_raw,
-        train_save_dir=cfg.paths.train_savepath,
-        val_save_dir=cfg.paths.val_savepath,
-        val_frac=cfg.data.val_frac,
-        seed=cfg.data.seed,
-        horizon=cfg.data.horizon,
-        stride=cfg.data.stride,
+    np.save(
+        os.path.join(cfg.paths.train_savepath, f"train_{feat}.npy"),
+        train_merged
     )
+    np.save(
+        os.path.join(cfg.paths.val_savepath, f"val_{feat}.npy"),
+        val_merged
+    )
+
+    del train_merged, val_merged
