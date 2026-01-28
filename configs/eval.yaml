@@ -1,9 +1,0 @@
-paths:
-  pred_path: experiments/baseline/infer/val.npy
-  actual_path: data/met/val_pm25.npy
-  save_dir: experiments/baseline/results/eval_results/
-  min_max_file: data/stats/min_max.mat
-
-data:
-  dataset: val
-  time_input: 10
