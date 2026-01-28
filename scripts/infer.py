@@ -23,8 +23,8 @@ print(f"Using device: {device}")
 
 min_max = io.loadmat(cfg.paths.min_max_file)
 
-max_pm = float(min_max["pm25_max"])
-min_pm = float(min_max["pm25_min"])
+max_pm = float(min_max["cpm25_max"])
+min_pm = float(min_max["cpm25_min"])
 
 def denorm(x):
     # to denormalize the prediction
@@ -188,7 +188,7 @@ testing(
     model,
     test_loader,
     cfg.data.time_out,
-    os.path.join(cfg.paths.output_loc,f'{dataset}.npy'),
+    os.path.join(cfg.paths.output_loc,f'preds.npy'),
     d, V, time_input, lat, long
 )
 

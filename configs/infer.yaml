@@ -2,13 +2,13 @@ experiment:
   name: baseline
 
 paths:
-  input_loc: data/val/
-  checkpoint: experiments/baseline/checkpoints/fno_baseline_ep499.pt
-  output_loc: experiments/baseline/infer/
-  min_max_file: data/stats/feat_min_max.mat
+  input_loc: /kaggle/input/aise-hack-test/data/test_in/
+  checkpoint: /kaggle/working/experiments/baseline/checkpoints/fno_baseline_ep499.pt
+  output_loc: /kaggle/working/
+  min_max_file: /kaggle/input/aise-hack-test/data/stats/feat_min_max.mat
 
 data:
-  dataset: val     
+  dataset: test_in     
   ntest: 528
   total_time: 26
   time_input: 10
