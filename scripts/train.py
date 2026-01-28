@@ -1,88 +1,50 @@
 from src.utils.utilities3 import *
 from src.utils.adam import Adam
 from models.baseline_model import FNO2D
+from src.utils.config import load_config
+
+import torch
+import numpy as np
+from scipy import io
+import json
+from tqdm import tqdm
+import os
+from timeit import default_timer
 
 # -----------------------
 # Load config
 # -----------------------
 
-from src.utils.config import load_config
 cfg = load_config("configs/train.yaml")
-
-
-import torch
-import numpy as np
-from scipy import io
-
-import json
-from tqdm import tqdm
-import math
-import os
-from timeit import default_timer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 if device.type == "cuda":
     torch.cuda.empty_cache()
 
-
-
 torch.manual_seed(0)
 np.random.seed(0)
-
 
 # -----------------------
 # Settings from YAML
 # -----------------------
 
-ntrain = cfg.data.ntrain
-ntest = cfg.data.ntest
-total_time = cfg.data.total_time
 time_input = cfg.data.time_input
-time_out = cfg.data.time_out
+time_out   = cfg.data.time_out
+T = time_input + time_out
+
 S1 = cfg.data.S1
 S2 = cfg.data.S2
+V  = cfg.features.V
 
-met_variables = cfg.features.met_variables
+met_variables      = cfg.features.met_variables
 emission_variables = cfg.features.emission_variables
+all_features = met_variables + emission_variables
+
+batch_size = cfg.training.batch_size
+epochs     = cfg.training.epochs
 
 savepath = cfg.paths.savepath
-
-V = cfg.features.V
-modes = cfg.model.modes
-width = cfg.model.width
-batch_size = cfg.training.batch_size
-epochs = cfg.training.epochs
-learning_rate = cfg.training.lr
-scheduler_step = cfg.training.scheduler_step
-scheduler_gamma = cfg.training.scheduler_gamma
-
-
-def denormalisation(concentration, max_pm, min_pm):
-    return (concentration * (max_pm.unsqueeze(-1) - min_pm.unsqueeze(-1))) + min_pm.unsqueeze(-1)
-
-# -------------------------------
-# Normalization helper
-# -------------------------------
-
-def normalize_data(data, min_max, key, *, wind=False, clip=False):
-    maxx = float(min_max[f"{key}_max"])
-    minn = float(min_max[f"{key}_min"])
-    den = maxx - minn
-
-    if den == 0:
-        raise ValueError(f"{key}_max == {key}_min")
-
-    if wind:
-        data = (2 * (data - minn) / den) - 1
-    else:
-        data = (data - minn) / den
-
-    if clip:
-        data = np.clip(data, 0, 1)
-
-    return data.astype(np.float32)
-
 
 # -------------------------------
 # Load min-max statistics
@@ -90,100 +52,98 @@ def normalize_data(data, min_max, key, *, wind=False, clip=False):
 
 min_max = io.loadmat(cfg.paths.min_max_file)
 
+# =========================================================
+# Dataloader
+# =========================================================
 
-# -------------------------------
-# Allocate arrays
-# -------------------------------
+class DataLoaders(torch.utils.data.Dataset):
 
-total = np.zeros((ntrain, time_input + time_out, S1, S2, V), dtype=np.float32)
-test  = np.zeros((ntest,  time_input + time_out, S1, S2, V), dtype=np.float32)
+    def __init__(self, split, cfg, min_max):
 
-counter = 0
+        self.time_input = cfg.data.time_input
+        self.time_out   = cfg.data.time_out
+        self.T = self.time_input + self.time_out
 
+        self.S1 = cfg.data.S1
+        self.S2 = cfg.data.S2
 
-# -------------------------------
-# Meteorology variables
-# -------------------------------
+        self.met_variables = cfg.features.met_variables
+        self.emi_variables = cfg.features.emission_variables
+        self.all_features  = self.met_variables + self.emi_variables
 
-for met_variable in met_variables:
- 
+        self.min_max = min_max
 
-    train_path = os.path.join(savepath, f"train_{met_variable}.npy")
-    val_path   = os.path.join(savepath, f"val_{met_variable}.npy")
+        self.arrs = {}
+        for feat in self.all_features:
+            path = os.path.join(cfg.paths.savepath, f"{split}_{feat}.npy")
+            self.arrs[feat] = np.load(path, mmap_mode="r")
 
-    train_data = np.load(train_path, mmap_mode="r")[:, :time_input + time_out]
-    val_data   = np.load(val_path,   mmap_mode="r")[:, :time_input + time_out]
+        self.N = self.arrs[self.all_features[0]].shape[0]
 
-    train_data = normalize_data(
-        train_data, min_max, met_variable,
-        wind=met_variable in ["u10", "v10"]
-    )
-    val_data = normalize_data(
-        val_data, min_max, met_variable,
-        wind=met_variable in ["u10", "v10"]
-    )
+    def __len__(self):
+        return self.N
 
-    total[..., counter] = train_data
-    test[...,  counter] = val_data
-    counter += 1
+    def _normalize(self, x, key):
 
-    del train_data, val_data
+        maxx = float(self.min_max[f"{key}_max"])
+        minn = float(self.min_max[f"{key}_min"])
+        den = maxx - minn
 
+        if key in ["u10", "v10"]:
+            x = (2 * (x - minn) / den) - 1
+        else:
+            x = (x - minn) / den
 
+        if key in self.emi_variables:
+            x = np.clip(x, 0, 1)
 
-# -------------------------------
-# Emission variables
-# -------------------------------
+        return x.astype(np.float32)
 
-for variable in emission_variables:
+    def __getitem__(self, idx):
 
-    train_data = np.load(os.path.join(savepath, f"train_{variable}.npy"), mmap_mode="r")[:, :time_input + time_out]
-    val_data = np.load(os.path.join(savepath, f"val_{variable}.npy"), mmap_mode="r")[:, :time_input + time_out]
+        x = np.empty((self.time_input, S1, S2, V), dtype=np.float32)
 
-    train_data = normalize_data(train_data, min_max, variable, clip=True)
-    val_data   = normalize_data(val_data,   min_max, variable, clip=True)
+        for c, feat in enumerate(self.all_features):
+            arr = self.arrs[feat][idx, :self.T]
+            arr = self._normalize(arr, feat)
+            x[..., c] = arr[:self.time_input]
 
-    total[..., counter] = train_data
-    test[...,  counter] = val_data
-    counter += 1
+        y = self.arrs[self.all_features[0]][idx, self.time_input:self.T]
+        y = self._normalize(y, self.all_features[0])
+        y = torch.from_numpy(y).permute(1,2,0)
 
-    del train_data, val_data
+        x = torch.from_numpy(x)
 
-
-
-
-# -------------------------------
-# Safety check
-# -------------------------------
-
-if counter != V:
-    raise ValueError(f"Feature mismatch: counter={counter}, V={V}")
+        return x, y
 
 
-train_a = torch.tensor(total[:ntrain, :time_input, :, :, :], dtype = torch.float32)
-train_u = torch.tensor(total[:ntrain, time_input:, :, :, 0], dtype = torch.float32)
-train_u = train_u.permute(0, 2, 3, 1)
+train_dataset = DataLoaders("train", cfg, min_max)
+test_dataset  = DataLoaders("val",   cfg, min_max)
 
-print(train_a.shape, train_u.shape)
-del total
-print(train_a.shape, train_u.shape)
-train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(train_a, train_u), batch_size=batch_size, shuffle=True,drop_last=True)
-del train_a, train_u
-test_a = torch.tensor(test[:ntest, :time_input, :, :, :], dtype = torch.float32)
-test_u = torch.tensor(test[:ntest, time_input:, :, :, 0], dtype = torch.float32)
-test_u = test_u.permute(0, 2, 3, 1)
-print(test_a.shape, test_u.shape)
-del test
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=batch_size, shuffle=False,drop_last=True)
-del test_u, test_a
+train_loader = torch.utils.data.DataLoader(
+    train_dataset,
+    batch_size=batch_size,
+    shuffle=True,
+    num_workers=2,  
+    pin_memory=True
+)
 
+test_loader = torch.utils.data.DataLoader(
+    test_dataset,
+    batch_size=batch_size,
+    shuffle=False,
+    num_workers=2,        
+    pin_memory=True
+)
 
-
+# =========================================================
+# Model
+# =========================================================
 
 model = FNO2D(
-    time_in=cfg.data.time_input,
-    features=cfg.features.V,
-    time_out=cfg.data.time_out,
+    time_in=time_input,
+    features=V,
+    time_out=time_out,
     width=cfg.model.width,
     modes=cfg.model.modes,
 ).to(device)
@@ -205,64 +165,70 @@ scheduler = torch.optim.lr_scheduler.StepLR(
     gamma=cfg.training.scheduler_gamma
 )
 
-
+myloss = LpLoss(size_average=False)
 
 path1 = cfg.paths.model_save_path
 log_save = cfg.paths.save_dir
 
-myloss = LpLoss(size_average=False)
-log = []
-
 os.makedirs(os.path.dirname(log_save), exist_ok=True)
 os.makedirs(os.path.dirname(path1), exist_ok=True)
 
+log = []
+
+# =========================================================
+# Training
+# =========================================================
 
 for ep in tqdm(range(epochs)):
     model.train()
     t1 = default_timer()
     train_l2 = 0.0
 
-    for x,y in train_loader:
-        x, y = x.to(device), y.to(device)
+    for x, y in train_loader:
+        x = x.to(device, non_blocking=True)
+        y = y.to(device, non_blocking=True)
+
         optimizer.zero_grad()
-        out = model(x).view(batch_size, S1, S2, time_out)
+        out = model(x).view(x.size(0), S1, S2, time_out)
         l2 = myloss(out, y)
-        total_loss = l2
-        total_loss.backward()
+        l2.backward()
         optimizer.step()
+
         train_l2 += l2.item()
+
     scheduler.step()
-    
+
     model.eval()
     test_l2 = 0.0
     with torch.no_grad():
         for x, y in test_loader:
-            x, y = x.to(device), y.to(device)
-            out = model(x).view(batch_size, S1, S2, time_out)
+            x = x.to(device, non_blocking=True)
+            y = y.to(device, non_blocking=True)
+            out = model(x).view(x.size(0), S1, S2, time_out)
             test_l2 += myloss(out, y).item()
-            
 
-    train_l2 /= ntrain
-    test_l2 /= ntest
+    train_l2 /= len(train_dataset)
+    test_l2  /= len(test_dataset)
 
     t2 = default_timer()
-        
+
     log.append({
         "epoch": ep,
         "duration": t2 - t1,
         "train_data_loss": train_l2,
-        "val_data_loss": test_l2, 
-        })
-    print(ep, t2-t1, train_l2, test_l2)
+        "val_data_loss": test_l2
+    })
+
+    print(ep, t2 - t1, train_l2, test_l2)
+
     if (ep + 1) % cfg.training.checkpoint_every == 0:
         ckpt_path = path1.replace(".pt", f"_ep{ep}.pt")
-        torch.save({'epoch': ep, 'model_state_dict': model.state_dict(), 
-        'optimizer_state_dict': optimizer.state_dict(), 'scheduler_state_dict': scheduler.state_dict()}, ckpt_path)
+        torch.save({
+            'epoch': ep,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict()
+        }, ckpt_path)
 
-        with open(log_save, "w") as final_log:
-        	json.dump(log, final_log)
-            
-
-
-      
-
+        with open(log_save, "w") as f:
+            json.dump(log, f)
