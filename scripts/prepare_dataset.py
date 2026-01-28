@@ -51,8 +51,9 @@ def create_timeseries_samples(
     print(f"==============================\n")
 
     for feat in tqdm(feature_list):
+        month_name=month.split('_')[0]
 
-        file_path = os.path.join( RAW_PATH, month, f"{feat}.npy")    #change month here if needed
+        file_path = os.path.join( RAW_PATH, month, f"{month_name}_{feat}.npy")    #change month here if needed
         arr = np.load(file_path)
 
         print(f"\nFeature: {feat}")
