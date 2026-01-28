@@ -1,7 +1,7 @@
 paths:
   raw_path: /kaggle/input/aise-hack-test/data/raw/
-  train_savepath: /kaggle/tmp/data/train/
-  val_savepath: /kaggle/tmp/data/val/
+  train_savepath: /kaggle/temp/data/train/
+  val_savepath: /kaggle/temp/data/val/
 
 data:
   months: ["APRIL_16",'JULY_16','OCT_16','DEC_16']
