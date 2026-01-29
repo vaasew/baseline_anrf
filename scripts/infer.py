@@ -2,6 +2,10 @@ from models.baseline_model import FNO2D
 from src.utils.config import load_config
 from src.utils.utilities3 import *
 
+import warnings
+warnings.filterwarnings("ignore")
+
+
 import torch
 import numpy as np
 from scipy import io
@@ -172,6 +176,6 @@ with torch.no_grad():
         prediction[i] = out.cpu().numpy()
 
 prediction = denorm(prediction)
-np.save(cfg.paths.output_loc, prediction)
+np.save(os.path.join(cfg.paths.output_loc,'preds.npy'), prediction)
 
 print("Saved predictions to:", cfg.paths.output_loc)

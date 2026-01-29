@@ -3,8 +3,8 @@ experiment:
 
 paths:
   input_loc: /kaggle/input/aise-hack-test/data/test_in/
-  checkpoint: /kaggle/working/experiments/baseline/checkpoints/fno_baseline_ep3.pt
-  output_loc: /kaggle/working/preds.npy
+  checkpoint: /kaggle/working/experiments/baseline/checkpoints/fno_baseline_ep99.pt
+  output_loc: /kaggle/working/
   min_max_file: /kaggle/input/aise-hack-test/data/stats/feat_min_max.mat
 
 data:
