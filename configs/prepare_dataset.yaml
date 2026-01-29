@@ -2,6 +2,8 @@ paths:
   raw_path: /kaggle/input/aise-hack-test/data/raw/
   train_savepath: /kaggle/temp/data/train/
   val_savepath: /kaggle/temp/data/val/
+  min_max_file: /kaggle/input/aise-hack-test/data/stats/feat_min_max.mat
+
 
 data:
   months: ["APRIL_16",'JULY_16','OCT_16','DEC_16']
