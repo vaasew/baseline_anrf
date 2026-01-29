@@ -3,7 +3,7 @@ experiment:
 
 paths:
   input_loc: /kaggle/input/aise-hack-test/data/test_in/
-  checkpoint: /kaggle/working/experiments/baseline/checkpoints/fno_baseline_ep499.pt
+  checkpoint: /kaggle/working/experiments/baseline/checkpoints/fno_baseline_ep4.pt
   output_loc: /kaggle/working/
   min_max_file: /kaggle/input/aise-hack-test/data/stats/feat_min_max.mat
 
