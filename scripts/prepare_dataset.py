@@ -1,9 +1,7 @@
 import os
-import sys
 import numpy as np
 from tqdm import tqdm
 from scipy import io
-
 from src.utils.config import load_config
 
 # -----------------------
@@ -11,145 +9,125 @@ from src.utils.config import load_config
 # -----------------------
 
 cfg = load_config("configs/prepare_dataset.yaml")
-RAW_PATH  = cfg.paths.raw_path
+RAW_PATH = cfg.paths.raw_path
+
+OUT_TRAIN = cfg.paths.train_savepath + "_blocks"
+OUT_VAL   = cfg.paths.val_savepath   + "_blocks"
+
+os.makedirs(OUT_TRAIN, exist_ok=True)
+os.makedirs(OUT_VAL, exist_ok=True)
 
 # -----------------------
-# Load min–max stats (NEW)
+# Load min–max stats
 # -----------------------
 
 min_max = io.loadmat(cfg.paths.min_max_file)
 all_features = cfg.features.met_variables_raw + cfg.features.emission_variables_raw
+V = len(all_features)
 
 min_vals = {f: min_max[f"{f}_min"].item() for f in all_features}
 max_vals = {f: min_max[f"{f}_max"].item() for f in all_features}
 
 # -----------------------
-# Helper Functions
+# Settings
 # -----------------------
 
-def train_val_split(samples, val_frac=0.2, seed=0):
-    np.random.seed(seed)
-    N = samples.shape[0]
-    idx = np.random.permutation(N)
-    n_val = int(val_frac * N)
+horizon = cfg.data.horizon
+stride  = cfg.data.stride
+val_frac = cfg.data.val_frac
+seed = cfg.data.seed
+BLOCK_SIZE = 200   # 🔴 adjust so one block is ~3–6 GB
 
-    val_idx = idx[:n_val]
-    train_idx = idx[n_val:]
+np.random.seed(seed)
 
-    return samples[train_idx], samples[val_idx]
+# -----------------------
+# Helper
+# -----------------------
 
+def normalize(arr, feat):
+    arr = arr.astype(np.float32)
+    arr = (arr - min_vals[feat]) / (max_vals[feat] - min_vals[feat])
+    if feat in ["u10", "v10"]:
+        arr = 2.0 * arr - 1.0
+    if feat in cfg.features.emission_variables_raw:
+        arr = np.clip(arr, 0, 1)
+    return arr
 
-def create_timeseries_samples(
-    month,
-    feature_list,
-    train_save_dir,
-    val_save_dir, 
-    val_frac,
-    seed,
-    horizon,
-    stride,
-):
-    train_data = {}
-    val_data = {}
+# -----------------------
+# Build blocks
+# -----------------------
 
-    for feat in tqdm(feature_list):
+def build_blocks(split="train"):
 
-        file_path = os.path.join(RAW_PATH, month, f"{feat}.npy")
-        arr = np.load(file_path).astype(np.float32)
+    print(f"\n==============================")
+    print(f"Building {split.upper()} blocks")
+    print(f"==============================\n")
 
+    all_samples = []
 
-        minn = min_vals[feat]
-        maxx = max_vals[feat]
-        den  = maxx - minn
+    # ---- First pass: count samples ----
+    for month in cfg.data.months:
+        any_feat = all_features[0]
+        T = np.load(os.path.join(RAW_PATH, month, f"{any_feat}.npy"), mmap_mode="r").shape[0]
+        n = len(range(0, T - horizon + 1, stride))
+        all_samples.extend([(month, i) for i in range(n)])
 
-        arr = (arr - minn) / den
+    all_samples = np.array(all_samples)
+    np.random.shuffle(all_samples)
 
-        if feat in ["u10", "v10"]:
-            arr = 2.0 * arr - 1.0
+    split_idx = int((1 - val_frac) * len(all_samples))
+    if split == "train":
+        sample_list = all_samples[:split_idx]
+    else:
+        sample_list = all_samples[split_idx:]
 
-        if feat in cfg.features.emission_variables_raw:
-            arr = np.clip(arr, 0, 1)
+    print("Total samples:", len(sample_list))
 
+    block_id = 0
 
-        print("Original shape:", arr.shape)
+    for i in range(0, len(sample_list), BLOCK_SIZE):
 
-        T = arr.shape[0]
-        idx = range(0, T - horizon + 1, stride)
+        block_samples = sample_list[i:i+BLOCK_SIZE]
+        B = len(block_samples)
 
-        samples = np.stack([arr[i:i+horizon] for i in idx], axis=0)
+        print(f"\nBlock {block_id} | Samples: {B}")
 
-        print("Total samples created -", samples.shape[0])
+        # ---- load all features month-wise ----
+        month_cache = {}
 
-        train_samples, val_samples = train_val_split(
-            samples, val_frac=val_frac, seed=seed
-        )
+        X_block = None
 
-        train_data[feat] = train_samples
-        val_data[feat]   = val_samples
+        for b, (month, idx) in enumerate(tqdm(block_samples)):
 
-        del arr, samples
+            if month not in month_cache:
+                month_cache[month] = {
+                    f: normalize(np.load(os.path.join(RAW_PATH, month, f"{f}.npy")), f)
+                    for f in all_features
+                }
 
-    return train_data, val_data
+            if X_block is None:
+                T0, H, W = month_cache[month][all_features[0]].shape
+                X_block = np.empty((B, horizon, H, W, V), dtype=np.float32)
+
+            for v, f in enumerate(all_features):
+                start = idx * stride
+                X_block[b, :, :, :, v] = month_cache[month][f][start:start+horizon]
+
+        out_dir = OUT_TRAIN if split == "train" else OUT_VAL
+        out_path = os.path.join(out_dir, f"{split}_block_{block_id:03d}.npy")
+
+        np.save(out_path, X_block)
+        print("Saved:", out_path, X_block.shape)
+
+        del X_block, month_cache
+        block_id += 1
 
 
 # -----------------------
 # Run
 # -----------------------
 
-os.makedirs(cfg.paths.train_savepath, exist_ok=True)
-os.makedirs(cfg.paths.val_savepath, exist_ok=True)
+build_blocks("train")
+build_blocks("val")
 
-print(f"\n==============================")
-print(f"Train Save path: {cfg.paths.train_savepath}")
-print(f"Val Save path: {cfg.paths.val_savepath}") 
-print(f"Horizon={cfg.data.horizon}, Stride={cfg.data.stride}")
-print(f"==============================\n")
-
-for feat in all_features:
-
-    print("\n===================================")
-    print("Processing feature:", feat)
-    print("===================================\n")
-
-    train_chunks = []
-    val_chunks   = []
-
-    for month in cfg.data.months:
-
-        print(f"Month: {month}")
-        print(f"==============================\n")
-
-        train_m, val_m = create_timeseries_samples(
-            month=month,
-            feature_list=[feat],
-            train_save_dir=cfg.paths.train_savepath,
-            val_save_dir=cfg.paths.val_savepath,
-            val_frac=cfg.data.val_frac,
-            seed=cfg.data.seed,
-            horizon=cfg.data.horizon,
-            stride=cfg.data.stride,
-        )
-
-        train_chunks.append(train_m[feat])
-        val_chunks.append(val_m[feat])
-
-        del train_m, val_m
-
-    train_merged = np.concatenate(train_chunks, axis=0)
-    val_merged   = np.concatenate(val_chunks, axis=0)
-
-    print(
-        f"\nFinal {feat} -> Train:", train_merged.shape,
-        "Val:", val_merged.shape
-    )
-
-    np.save(
-        os.path.join(cfg.paths.train_savepath, f"train_{feat}.npy"),
-        train_merged.astype(np.float32)
-    )
-    np.save(
-        os.path.join(cfg.paths.val_savepath, f"val_{feat}.npy"),
-        val_merged.astype(np.float32)
-    )
-
-    del train_chunks, val_chunks, train_merged, val_merged
+print("\n✅ All blocks built successfully.")

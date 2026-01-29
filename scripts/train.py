@@ -13,7 +13,6 @@ import json
 from tqdm import tqdm
 import os
 import time
-from timeit import default_timer
 
 # -----------------------
 # Load config
@@ -48,57 +47,63 @@ V = len(all_features)
 batch_size = cfg.training.batch_size
 epochs     = cfg.training.epochs
 
-savepath_train = cfg.paths.savepath_train
-savepath_val   = cfg.paths.savepath_val
+# 🔴 block directories
+TRAIN_BLOCK_DIR = cfg.paths.train_savepath + "_blocks"
+VAL_BLOCK_DIR   = cfg.paths.val_savepath   + "_blocks"
 
 # =========================================================
-# Dataloader
+# Block Dataset
 # =========================================================
 
-class DataLoaders(torch.utils.data.Dataset):
+class BlockDataset(torch.utils.data.Dataset):
+    def __init__(self, block_dir, time_input):
 
-    def __init__(self, split, savepath_train, savepath_val):
+        self.block_files = sorted([
+            os.path.join(block_dir, f)
+            for f in os.listdir(block_dir)
+            if f.endswith(".npy")
+        ])
 
-        self.time_input = cfg.data.time_input
-        self.time_out   = cfg.data.time_out
-        self.T = self.time_input + self.time_out
+        self.blocks = []
+        self.block_sizes = []
+        self.cum_sizes = []
 
-        self.S1 = cfg.data.S1
-        self.S2 = cfg.data.S2
-        self.all_features = all_features
+        total = 0
+        for bf in self.block_files:
+            arr = np.load(bf, mmap_mode="r")  # (B, T, S1, S2, V)
+            self.blocks.append(arr)
+            n = arr.shape[0]
+            self.block_sizes.append(n)
+            total += n
+            self.cum_sizes.append(total)
 
-        if split == "train":
-            base_path = savepath_train
-        elif split == "val":
-            base_path = savepath_val
-        else:
-            raise ValueError
-
-        self.arrs = {
-            feat: np.load(os.path.join(base_path, f"{split}_{feat}.npy"), mmap_mode="r")
-            for feat in self.all_features
-        }
-
-        self.N = self.arrs[self.all_features[0]].shape[0]
+        self.N = total
+        self.time_input = time_input
 
     def __len__(self):
         return self.N
 
+    def _locate(self, idx):
+        for i, cs in enumerate(self.cum_sizes):
+            if idx < cs:
+                prev = 0 if i == 0 else self.cum_sizes[i-1]
+                return i, idx - prev
+        raise IndexError
+
     def __getitem__(self, idx):
 
-        X = np.empty((self.T, self.S1, self.S2, len(self.all_features)), dtype=np.float32)
+        block_id, local_idx = self._locate(idx)
+        arr = self.blocks[block_id]
 
-        for i, f in enumerate(self.all_features):
-            X[..., i] = self.arrs[f][idx, :self.T]
-
+        X = arr[local_idx]                 # (T, S1, S2, V)
         x = torch.from_numpy(X[:self.time_input])
         y = torch.from_numpy(X[self.time_input:, ..., 0]).permute(1, 2, 0)
 
         return x, y
 
 
-train_dataset = DataLoaders("train", savepath_train, savepath_val)
-test_dataset  = DataLoaders("val",   savepath_train, savepath_val)
+train_dataset = BlockDataset(TRAIN_BLOCK_DIR, time_input)
+test_dataset  = BlockDataset(VAL_BLOCK_DIR,   time_input)
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
