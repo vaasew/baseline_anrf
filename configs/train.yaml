@@ -35,9 +35,9 @@ model:
   width: 20
 
 training:
-  batch_size: 4
+  batch_size: 8
   epochs: 300
-  lr: 0.001
+  lr: 2e-3
   weight_decay: 1e-4
   scheduler_step: 50
   scheduler_gamma: 0.5

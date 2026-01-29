@@ -139,7 +139,7 @@ print("Total parameters:", count_params(model))
 
 optimizer = Adam(
     model.parameters(),
-    lr=cfg.training.lr,
+    lr=float(cfg.training.l),
     weight_decay=float(cfg.training.weight_decay)
 )
 
