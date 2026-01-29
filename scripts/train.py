@@ -2,6 +2,9 @@ from src.utils.utilities3 import *
 from src.utils.adam import Adam
 from models.baseline_model import FNO2D
 from src.utils.config import load_config
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="torch._inductor")
+
 
 import torch
 import numpy as np
@@ -166,7 +169,6 @@ model = FNO2D(
     modes=cfg.model.modes,
 ).to(device)
 
-model = torch.compile(model)
 
 def count_params(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
