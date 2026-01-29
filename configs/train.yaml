@@ -19,16 +19,16 @@ data:
   S2: 124
 
 features:
-  V: 2
-  met_variables: ['cpm25',]
+  V: 16
+  met_variables: ['cpm25','q2','t2','u10','swdown','pblh','v10','psfc','rain']
   emission_variables:
     - 'PM25'
-    # - 'NH3'
-    # - 'SO2'
-    # - 'NOx'
-    # - 'NMVOC_e'
-    # - 'NMVOC_finn'
-    # - 'bio'
+    - 'NH3'
+    - 'SO2'
+    - 'NOx'
+    - 'NMVOC_e'
+    - 'NMVOC_finn'
+    - 'bio'
 
 model:
   modes: 12
