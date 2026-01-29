@@ -158,7 +158,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
 # =========================================================
-# Inference
+# Inference on test set
 # =========================================================
 
 os.makedirs(os.path.dirname(cfg.paths.output_loc), exist_ok=True)
