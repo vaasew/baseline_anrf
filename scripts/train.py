@@ -72,14 +72,15 @@ class DataLoaders(torch.utils.data.Dataset):
         self.emi_variables = cfg.features.emission_variables
         self.all_features  = self.met_variables + self.emi_variables
 
-        self.min_max = min_max
-
         if split == "train":
             base_path = savepath_train
         elif split == "val":
             base_path = savepath_val
-        else:
-            raise ValueError("split must be 'train' or 'val'")
+
+
+        # -----------------------
+        # Load arrays (memmap)
+        # -----------------------
 
         self.arrs = {}
         for feat in self.all_features:
@@ -88,39 +89,44 @@ class DataLoaders(torch.utils.data.Dataset):
 
         self.N = self.arrs[self.all_features[0]].shape[0]
 
+
+        self.min_vals = {}
+        self.max_vals = {}
+
+        for feat in self.all_features:
+            self.max_vals[feat] = min_max[f"{feat}_max"].item()
+            self.min_vals[feat] = min_max[f"{feat}_min"].item()
+
+        self.max_arr = np.array([self.max_vals[f] for f in self.all_features], dtype=np.float32)
+        self.min_arr = np.array([self.min_vals[f] for f in self.all_features], dtype=np.float32)
+        self.den_arr = self.max_arr - self.min_arr
+
+        self.wind_idx = [i for i, f in enumerate(self.all_features) if f in ["u10", "v10"]]
+        self.emi_idx  = [i for i, f in enumerate(self.all_features) if f in self.emi_variables]
+
     def __len__(self):
         return self.N
 
-    def _normalize(self, x, key):
-
-        maxx = float(self.min_max[f"{key}_max"])
-        minn = float(self.min_max[f"{key}_min"])
-        den = maxx - minn
-
-        if key in ["u10", "v10"]:
-            x = (2 * (x - minn) / den) - 1
-        else:
-            x = (x - minn) / den
-
-        if key in self.emi_variables:
-            x = np.clip(x, 0, 1)
-
-        return x.astype(np.float32)
-
     def __getitem__(self, idx):
 
-        x = np.empty((self.time_input, S1, S2, V), dtype=np.float32)
+        # (T, S1, S2, V)
+        X = np.stack(
+            [self.arrs[f][idx, :self.T] for f in self.all_features],
+            axis=-1
+        )
 
-        for c, feat in enumerate(self.all_features):
-            arr = self.arrs[feat][idx, :self.T]
-            arr = self._normalize(arr, feat)
-            x[..., c] = arr[:self.time_input]
+        X = (X - self.min_arr) / self.den_arr
 
-        y = self.arrs[self.all_features[0]][idx, self.time_input:self.T]
-        y = self._normalize(y, self.all_features[0])
-        y = torch.from_numpy(y).permute(1, 2, 0)
+        if len(self.wind_idx) > 0:
+            X[..., self.wind_idx] = 2.0 * X[..., self.wind_idx] - 1.0
 
-        x = torch.from_numpy(x)
+        if len(self.emi_idx) > 0:
+            X[..., self.emi_idx] = np.clip(X[..., self.emi_idx], 0, 1)
+
+        X = X.astype(np.float32)
+
+        x = torch.from_numpy(X[:self.time_input])
+        y = torch.from_numpy(X[self.time_input:, ..., 0]).permute(1, 2, 0)
 
         return x, y
 
@@ -132,16 +138,20 @@ train_loader = torch.utils.data.DataLoader(
     train_dataset,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=2,
-    pin_memory=True
+    num_workers=4,
+    pin_memory=True,
+    persistent_workers=True,
+    prefetch_factor=4
 )
 
 test_loader = torch.utils.data.DataLoader(
     test_dataset,
     batch_size=batch_size,
     shuffle=False,
-    num_workers=2,
-    pin_memory=True
+    num_workers=4,
+    pin_memory=True,
+    persistent_workers=True,
+    prefetch_factor=4
 )
 
 # =========================================================
@@ -155,6 +165,8 @@ model = FNO2D(
     width=cfg.model.width,
     modes=cfg.model.modes,
 ).to(device)
+
+model = torch.compile(model)
 
 def count_params(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -196,9 +208,11 @@ for ep in tqdm(range(epochs)):
         x = x.to(device, non_blocking=True)
         y = y.to(device, non_blocking=True)
 
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
+
         out = model(x).view(x.size(0), S1, S2, time_out)
         l2 = myloss(out, y)
+
         l2.backward()
         optimizer.step()
 
@@ -212,6 +226,7 @@ for ep in tqdm(range(epochs)):
         for x, y in test_loader:
             x = x.to(device, non_blocking=True)
             y = y.to(device, non_blocking=True)
+
             out = model(x).view(x.size(0), S1, S2, time_out)
             test_l2 += myloss(out, y).item()
 

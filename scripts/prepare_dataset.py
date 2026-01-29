@@ -43,12 +43,7 @@ def create_timeseries_samples(
     train_data = {}
     val_data = {}
 
-    print(f"\n==============================")
-    print(f"Month: {month}")
-    print(f"Train Save path: {train_save_dir}")
-    print(f"Val Save path: {val_save_dir}") 
-    print(f"Horizon={horizon}, Stride={stride}")
-    print(f"==============================\n")
+    
 
     for feat in tqdm(feature_list):
         file_path = os.path.join( RAW_PATH, month, f"{feat}.npy")    #change month here if needed
@@ -62,7 +57,7 @@ def create_timeseries_samples(
         idx = range(0, T - horizon + 1, stride)
         samples = np.stack([arr[i:i+horizon] for i in idx], axis=0)
 
-        print("Total samples:", samples.shape[0])
+        print("Total samples created -", samples.shape[0])
 
         train_samples, val_samples = train_val_split(
             samples, val_frac=val_frac, seed=seed
@@ -88,17 +83,27 @@ os.makedirs(cfg.paths.val_savepath, exist_ok=True)
 
 all_features = cfg.features.met_variables_raw + cfg.features.emission_variables_raw
 
+print(f"\n==============================")
+print(f"Train Save path: {cfg.paths.train_savepath}")
+print(f"Val Save path: {cfg.paths.val_savepath}") 
+print(f"Horizon={cfg.data.horizon}, Stride={cfg.data.stride}")
+print(f"==============================\n")
+
 for feat in all_features:
 
     print("\n===================================")
     print("Processing feature:", feat)
     print("===================================\n")
 
+
+
     train_chunks = []
     val_chunks   = []
 
     for month in cfg.data.months:
 
+        print(f"Month: {month}")
+        print(f"==============================\n")
         train_m, val_m = create_timeseries_samples(
             month=month,
             feature_list=[feat],   # <-- single feature
