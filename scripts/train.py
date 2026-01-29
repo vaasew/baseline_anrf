@@ -68,7 +68,7 @@ class DataLoaders(torch.utils.data.Dataset):
         self.all_features = all_features
 
         if split == "train":
-            
+
             base_path = savepath_train
         elif split == "val":
             base_path = savepath_val
@@ -212,12 +212,12 @@ for ep in tqdm(range(epochs)):
     t_epoch_end = time.time()
     n_batches = len(train_loader)
 
-    print("\n========== Epoch profile ==========")
-    print(f"Epoch total time     : {t_epoch_end - t_epoch_start:.2f} s")
-    print(f"Avg data loading    : {data_time / n_batches:.4f} s/batch")
-    print(f"Avg H2D transfer    : {transfer_time / n_batches:.4f} s/batch")
-    print(f"Avg compute (GPU)   : {compute_time / n_batches:.4f} s/batch")
-    print("===================================\n")
+    # print("\n========== Epoch profile ==========")
+    # print(f"Epoch total time     : {t_epoch_end - t_epoch_start:.2f} s")
+    # print(f"Avg data loading    : {data_time / n_batches:.4f} s/batch")
+    # print(f"Avg H2D transfer    : {transfer_time / n_batches:.4f} s/batch")
+    # print(f"Avg compute (GPU)   : {compute_time / n_batches:.4f} s/batch")
+    # print("===================================\n")
 
     log.append({
         "epoch": ep,
