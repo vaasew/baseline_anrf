@@ -36,15 +36,15 @@ def denorm(x):
 # Settings
 # -----------------------
 
-ntest       = cfg.data.ntest
-time_input  = cfg.data.time_input
-time_out    = cfg.data.time_out
-T           = time_input + time_out
-S1          = cfg.data.S1
-S2          = cfg.data.S2
+ntest  = cfg.data.ntest
+time_input = cfg.data.time_input
+time_out = cfg.data.time_out
+T  = time_input + time_out
+S1 = cfg.data.S1
+S2 = cfg.data.S2
 lat, long   = S1, S2
 
-met_variables      = cfg.features.met_variables
+met_variables = cfg.features.met_variables
 emission_variables = cfg.features.emission_variables
 all_features = met_variables + emission_variables
 
