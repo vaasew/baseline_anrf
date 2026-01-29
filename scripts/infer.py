@@ -95,7 +95,7 @@ class DataLoaders(torch.utils.data.Dataset):
             if feat!='PM25':
                 self.arrs[feat] = np.load(path, mmap_mode="r")
             else:
-                self.arrs[feat]=np.zeroes((996,10,140,124))
+                self.arrs[feat]=np.zeros((996,10,140,124))
 
         self.N = self.arrs[self.all_features[0]].shape[0]
 
