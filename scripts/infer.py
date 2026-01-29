@@ -1,6 +1,6 @@
 from models.baseline_model import FNO2D
 from src.utils.config import load_config
-from utils.utilities3 import *
+from src.utils.utilities3 import *
 
 import torch
 import numpy as np
@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 # -----------------------
 # Load config
-# -----------------------
+# -------
 
 cfg = load_config("configs/infer.yaml")
 
