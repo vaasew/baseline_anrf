@@ -19,7 +19,7 @@ data:
   S2: 124
 
 features:
-  V: 16
+  V: 2
   met_variables: ['cpm25',]
   emission_variables:
     - 'PM25'
