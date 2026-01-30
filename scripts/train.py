@@ -169,31 +169,20 @@ for ep in tqdm(range(epochs)):
     t_epoch_start = time.time()
 
     train_l2 = 0.0
-    data_time = 0.0
-    transfer_time = 0.0
-    compute_time = 0.0
 
-    end = time.time()
 
     for x, y in train_loader:
 
-        data_time += time.time() - end
 
-        t0 = time.time()
         x = x.to(device, non_blocking=True)
         y = y.to(device, non_blocking=True)
-        transfer_time += time.time() - t0
-
-        t1 = time.time()
         optimizer.zero_grad(set_to_none=True)
         out = model(x).view(x.size(0), S1, S2, time_out)
         l2 = myloss(out, y)
         l2.backward()
         optimizer.step()
-        compute_time += time.time() - t1
 
         train_l2 += l2.item()
-        end = time.time()
 
     scheduler.step()
 
@@ -212,12 +201,6 @@ for ep in tqdm(range(epochs)):
     t_epoch_end = time.time()
     n_batches = len(train_loader)
 
-    # print("\n========== Epoch profile ==========")
-    # print(f"Epoch total time     : {t_epoch_end - t_epoch_start:.2f} s")
-    # print(f"Avg data loading    : {data_time / n_batches:.4f} s/batch")
-    # print(f"Avg H2D transfer    : {transfer_time / n_batches:.4f} s/batch")
-    # print(f"Avg compute (GPU)   : {compute_time / n_batches:.4f} s/batch")
-    # print("===================================\n")
 
     log.append({
         "epoch": ep,
