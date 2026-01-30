@@ -1,8 +1,8 @@
 paths:
-  raw_path: /kaggle/input/aise-hack-test/data/raw/
+  raw_path: /kaggle/input/aise-hack-test/raw/
   train_savepath: /kaggle/temp/data/train/
   val_savepath: /kaggle/temp/data/val/
-  min_max_file: /kaggle/input/aise-hack-test/data/stats/feat_min_max.mat
+  min_max_file: /kaggle/input/aise-hack-test/stats/feat_min_max.mat
 
 
 data:
