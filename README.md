@@ -97,9 +97,10 @@ This codebase is suitable for:
 
 ## Points to remember regarding working with Kaggle
 
-- Anything inside `/kaggle/input/`is read-only.
 - Using **GPU P100** accelerator you have a peak CPU RAM limit of 29GB.
 - You can save data upto 20GB in `/kaggle/working/`, data stored here is accessible even after session is closed. So anything relevant to be saved like final test predictions have to be saved here. Rest you can save in `/kaggle/temp/` or any directory outside of `/kaggle/working/`, they won't be saved once session is over.
+- Keep in mind of the all other logistical constraints imposed by Kaggle like session time limit, available weekly GPU compute etc and make sure your pipeline is as robust as possible to these constraints.
+- Anything inside `/kaggle/input/`is read-only.
 - Make sure to save your final test predictions in `/kaggle/working/preds.npy` for evaluation in this competition.
 
 ---
