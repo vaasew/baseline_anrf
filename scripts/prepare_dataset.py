@@ -14,7 +14,7 @@ cfg = load_config("configs/prepare_dataset.yaml")
 RAW_PATH  = cfg.paths.raw_path
 
 # -----------------------
-# Load min–max stats (NEW)
+# Load min–max stats
 # -----------------------
 
 min_max = io.loadmat(cfg.paths.min_max_file)
