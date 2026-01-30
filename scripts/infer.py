@@ -96,10 +96,7 @@ class DataLoaders(torch.utils.data.Dataset):
         self.arrs = {}
         for feat in self.all_features:
             path = os.path.join(cfg.paths.input_loc, f"{feat}.npy")
-            if feat!='PM25':
-                self.arrs[feat] = np.load(path, mmap_mode="r")
-            else:
-                self.arrs[feat]=np.zeros((996,10,140,124))
+            self.arrs[feat] = np.load(path, mmap_mode="r")
 
         self.N = self.arrs[self.all_features[0]].shape[0]
 
