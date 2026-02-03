@@ -148,3 +148,22 @@ Run the pipeline sequentially:
 `python prepare_dataset.py` → `python train.py` → `python infer.py`
 
 Each stage depends strictly on outputs produced by the previous step.
+
+
+## Baseline Notebook — Execution Details
+
+**Hardware**
+- GPU: P100
+
+**Runtime**
+- ~350 seconds per epoch
+- ~9.8 hours for the complete run
+
+**Disk Usage**
+- ~78 GB written during execution
+  - ~76 GB: Prepared train/val dataset stored at `/kaggle/temp/data`
+
+**Memory Usage**
+- Peak RAM: < 12 GB / 30 GB
+- Peak GPU Memory: < 4 GB / 16 GB
+
