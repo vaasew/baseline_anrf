@@ -161,7 +161,7 @@ Each stage depends strictly on outputs produced by the previous step.
 
 **Disk Usage**
 - ~78 GB written during execution
-  - ~76 GB: Prepared train/val dataset stored at `/kaggle/temp/data`
+  - ~76 GB: Prepared train/val dataset stored at `/kaggle/temp/data` in float32
 
 **Memory Usage**
 - Peak RAM: < 12 GB / 30 GB
