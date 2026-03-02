@@ -19,3 +19,4 @@
 *.csv
 *.parquet
 *.feather
+*.DS_Store
